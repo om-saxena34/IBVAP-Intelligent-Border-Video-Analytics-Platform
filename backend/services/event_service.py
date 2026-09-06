@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from threading import Lock
 from typing import Dict, List
 
 from backend.models.alert import CreateAlertRequest, Severity
@@ -7,27 +10,66 @@ from backend.services.alert_service import alert_service
 
 
 class EventService:
-    """Service responsible for managing detected events."""
+    """Thread-safe service responsible for managing detected events."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._events: Dict[int, Event] = {}
         self._next_id: int = 1
+        self._lock = Lock()
 
-    def create_event(self, request: CreateEventRequest) -> Event:
-        """Create a new event. Generate an alert for HIGH and CRITICAL events."""
+        self._last_event_time: Dict[str, datetime] = {}
+        self._deduplication_seconds: float = 5.0
 
-        event = Event(
-            id=self._next_id,
-            camera_id=request.camera_id,
-            event_type=request.event_type,
-            severity=request.severity,
-            timestamp=datetime.now(),
+    def create_event(
+        self,
+        request: CreateEventRequest,
+    ) -> Event | None:
+        """
+        Create an event.
+
+        Identical camera/event/severity combinations are suppressed
+        for a short cooldown to prevent frame-by-frame event flooding.
+        """
+
+        now = datetime.now()
+
+        dedupe_key = (
+            f"{request.camera_id}:"
+            f"{request.event_type}:"
+            f"{request.severity.value}"
         )
 
-        self._events[self._next_id] = event
-        self._next_id += 1
+        with self._lock:
+            previous_time = self._last_event_time.get(
+                dedupe_key
+            )
 
-        if request.severity in [Severity.HIGH, Severity.CRITICAL]:
+            if previous_time is not None:
+                elapsed = (
+                    now - previous_time
+                ).total_seconds()
+
+                if elapsed < self._deduplication_seconds:
+                    return None
+
+            event = Event(
+                id=self._next_id,
+                camera_id=request.camera_id,
+                event_type=request.event_type,
+                severity=request.severity,
+                timestamp=now,
+            )
+
+            self._events[self._next_id] = event
+            self._next_id += 1
+
+            self._last_event_time[dedupe_key] = now
+
+        # Generate alerts outside the event lock.
+        if request.severity in {
+            Severity.HIGH,
+            Severity.CRITICAL,
+        }:
             alert_service.create_alert(
                 CreateAlertRequest(
                     camera_id=request.camera_id,
@@ -39,12 +81,54 @@ class EventService:
         return event
 
     def get_all_events(self) -> List[Event]:
-        """Return all events."""
-        return list(self._events.values())
+        """Return all events, newest first."""
+
+        with self._lock:
+            return list(
+                reversed(
+                    list(self._events.values())
+                )
+            )
+
+    def get_events_today(self) -> List[Event]:
+        """Return events generated today."""
+
+        today = datetime.now().date()
+
+        with self._lock:
+            return [
+                event
+                for event in reversed(
+                    list(self._events.values())
+                )
+                if event.timestamp.date() == today
+            ]
 
     def get_total_events(self) -> int:
         """Return total number of events."""
-        return len(self._events)
+
+        with self._lock:
+            return len(self._events)
+
+    def get_events_today_count(self) -> int:
+        """Return today's event count."""
+
+        today = datetime.now().date()
+
+        with self._lock:
+            return sum(
+                1
+                for event in self._events.values()
+                if event.timestamp.date() == today
+            )
+
+    def clear(self) -> None:
+        """Clear all events. Primarily useful for tests."""
+
+        with self._lock:
+            self._events.clear()
+            self._last_event_time.clear()
+            self._next_id = 1
 
 
 event_service = EventService()

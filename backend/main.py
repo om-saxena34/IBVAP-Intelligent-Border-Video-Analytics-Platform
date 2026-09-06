@@ -16,6 +16,8 @@ from backend.services.stream_manager import stream_manager
 from config.settings import settings
 from backend.api.events import router as events_router
 from backend.api.alerts import router as alerts_router
+from backend.api.analytics import router as analytics_router
+
 
 # Configure logging
 logging.basicConfig(
@@ -59,7 +61,7 @@ app.include_router(health_router, prefix=settings.API_PREFIX)
 app.include_router(streams_router, prefix=settings.API_PREFIX)
 app.include_router(events_router)
 app.include_router(alerts_router)
-
+app.include_router(analytics_router)
 
 @app.get("/", tags=["Root"])
 async def root() -> JSONResponse:
