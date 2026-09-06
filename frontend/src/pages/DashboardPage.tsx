@@ -1,11 +1,14 @@
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useHealth } from '../hooks/useHealth';
 import { useStreams } from '../hooks/useStreams';
+import { useAlerts } from '../hooks/useAlerts';
+import { useEvents } from '../hooks/useEvents';
 import StatCard from '../components/StatCard';
 import CameraGrid from '../components/CameraGrid';
 import AlertPanel from '../components/AlertPanel';
 import CapabilityGrid from '../components/CapabilityCard';
 import SystemInfo from '../components/SystemInfo';
+import VirtualFenceModal from '../components/VirtualFenceModal';
 
 interface DashboardPageProps {
   onOpenConnectModal: () => void;
@@ -16,6 +19,9 @@ export default function DashboardPage({
   onOpenConnectModal,
   onNotify,
 }: DashboardPageProps) {
+  const [isFenceModalOpen, setIsFenceModalOpen] = useState<boolean>(false);
+  const [selectedCameraForFence, setSelectedCameraForFence] = useState<string>('CAM-001');
+
   const {
     health,
     loading: healthLoading,
@@ -30,6 +36,16 @@ export default function DashboardPage({
     error: streamsError,
     refresh: refreshStreams,
   } = useStreams(5000);
+
+  const {
+    activeCount: activeAlertsCount,
+    refresh: refreshAlerts,
+  } = useAlerts(4000);
+
+  const {
+    events,
+    refresh: refreshEvents,
+  } = useEvents(4000);
 
   const handleCameraDisconnected = useCallback(
     (cameraId: string) => {
@@ -47,6 +63,15 @@ export default function DashboardPage({
     [onNotify]
   );
 
+  const handleFenceEventTriggered = useCallback(
+    (eventType: string, camId: string) => {
+      onNotify(`Border Intelligence: ${eventType.replace(/_/g, ' ')} detected on ${camId}`, 'success');
+      refreshAlerts();
+      refreshEvents();
+    },
+    [onNotify, refreshAlerts, refreshEvents]
+  );
+
   // Backend-driven counts from actual streams
   const totalCameras = streams.length;
   const onlineCameras = streams.filter((s) => s.status === 'ONLINE').length;
@@ -62,6 +87,18 @@ export default function DashboardPage({
       : `${totalCameras - onlineCameras} not streaming (${offlineCameras} offline${
           reconnectingCameras > 0 ? `, ${reconnectingCameras} reconnecting` : ''
         }${errorCameras > 0 ? `, ${errorCameras} error` : ''})`;
+
+  const alertsSubtitle =
+    activeAlertsCount === 0
+      ? 'Perimeter perimeter secure'
+      : activeAlertsCount === 1
+      ? '1 active threat requires attention'
+      : `${activeAlertsCount} active threats require attention`;
+
+  const eventsSubtitle =
+    events.length === 0
+      ? 'No audit entries logged'
+      : `${events.length} chronological audit entries`;
 
   return (
     <div className="page-container">
@@ -90,19 +127,18 @@ export default function DashboardPage({
 
         <StatCard
           title="Active Alerts"
-          value="N/A"
-          sub="Alert API not connected"
-          note="Pending backend alerts module"
-          accent="amber"
+          value={activeAlertsCount}
+          sub={alertsSubtitle}
+          accent={activeAlertsCount > 0 ? 'amber' : 'green'}
           icon="🚨"
+          badge={activeAlertsCount > 0 ? 'THREAT' : 'SECURE'}
         />
 
         <StatCard
           title="Events Today"
-          value="N/A"
-          sub="Events API not connected"
-          note="Pending backend telemetry log"
-          accent="gray"
+          value={events.length}
+          sub={eventsSubtitle}
+          accent="blue"
           icon="📋"
         />
       </section>
@@ -121,13 +157,25 @@ export default function DashboardPage({
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            className="btn btn-primary btn-tactical btn-sm"
-            onClick={onOpenConnectModal}
-          >
-            + Connect Camera
-          </button>
+          <div className="header-action-buttons">
+            <button
+              type="button"
+              className="btn btn-secondary btn-tactical btn-sm"
+              onClick={() => {
+                setSelectedCameraForFence(streams[0]?.camera_id || 'CAM-001');
+                setIsFenceModalOpen(true);
+              }}
+            >
+              🛡 Virtual Fence Inspector
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-tactical btn-sm"
+              onClick={onOpenConnectModal}
+            >
+              + Connect Camera
+            </button>
+          </div>
         </div>
 
         {streamsError && (
@@ -149,7 +197,7 @@ export default function DashboardPage({
 
       {/* Secondary Row: Recent Border Alerts & System Telemetry */}
       <div className="dashboard-grid-dual">
-        <AlertPanel />
+        <AlertPanel onResolveSuccess={() => { refreshAlerts(); refreshEvents(); }} />
         <SystemInfo
           health={health}
           loading={healthLoading}
@@ -160,6 +208,14 @@ export default function DashboardPage({
 
       {/* AI Detection Capabilities Section */}
       <CapabilityGrid />
+
+      {/* Virtual Fence / Border Intelligence Modal */}
+      <VirtualFenceModal
+        isOpen={isFenceModalOpen}
+        onClose={() => setIsFenceModalOpen(false)}
+        selectedCameraId={selectedCameraForFence}
+        onTriggerEvent={handleFenceEventTriggered}
+      />
     </div>
   );
 }

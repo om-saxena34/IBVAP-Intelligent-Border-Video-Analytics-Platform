@@ -1,11 +1,7 @@
-"""
-Event Pydantic models for IBVAP.
-"""
-
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 from backend.models.alert import Severity
-from typing import List
 
 
 class Event(BaseModel):
@@ -26,18 +22,31 @@ class Event(BaseModel):
     event_type: str = Field(
         ...,
         description="Type of detected event",
-        examples=["Person Detected"],
+        examples=["VIRTUAL_FENCE_BREACH"],
     )
 
     severity: Severity = Field(
         ...,
         description="Severity level of the event",
-        examples=[Severity.LOW],
+        examples=[Severity.HIGH],
     )
 
     timestamp: datetime = Field(
         ...,
         description="Time when the event was generated",
+    )
+
+    confidence: float = Field(
+        default=0.92,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score of the AI detection",
+        examples=[0.92],
+    )
+
+    details: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional metadata or forensic contextual parameters",
     )
 
 
@@ -53,14 +62,33 @@ class CreateEventRequest(BaseModel):
     event_type: str = Field(
         ...,
         description="Type of detected event",
-        examples=["Person Detected"],
+        examples=["VIRTUAL_FENCE_BREACH"],
     )
 
     severity: Severity = Field(
         ...,
         description="Severity level of the event",
-        examples=[Severity.LOW],
+        examples=[Severity.HIGH],
     )
+
+    confidence: Optional[float] = Field(
+        default=0.92,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score of the detection",
+        examples=[0.92],
+    )
+
+    timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Optional custom event timestamp (defaults to current time if omitted)",
+    )
+
+    details: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional metadata or forensic contextual parameters",
+    )
+
 
 class EventListResponse(BaseModel):
     """Response containing all detected events."""

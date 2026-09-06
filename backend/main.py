@@ -12,10 +12,11 @@ from fastapi.responses import JSONResponse
 
 from backend.api.health import router as health_router
 from backend.api.streams import router as streams_router
-from backend.services.stream_manager import stream_manager
-from config.settings import settings
 from backend.api.events import router as events_router
 from backend.api.alerts import router as alerts_router
+from backend.api.intelligence import router as intelligence_router
+from backend.services.stream_manager import stream_manager
+from config.settings import settings
 
 # Configure logging
 logging.basicConfig(
@@ -57,8 +58,9 @@ app.add_middleware(
 # Register API Routers
 app.include_router(health_router, prefix=settings.API_PREFIX)
 app.include_router(streams_router, prefix=settings.API_PREFIX)
-app.include_router(events_router)
-app.include_router(alerts_router)
+app.include_router(events_router, prefix=settings.API_PREFIX)
+app.include_router(alerts_router, prefix=settings.API_PREFIX)
+app.include_router(intelligence_router, prefix=settings.API_PREFIX)
 
 
 @app.get("/", tags=["Root"])
@@ -73,8 +75,12 @@ async def root() -> JSONResponse:
             "docs_url": "/docs",
             "health_url": "/health",
             "streams_url": "/streams",
+            "events_url": "/events",
+            "alerts_url": "/alerts",
+            "intelligence_url": "/intelligence/zones",
         }
     )
+
 
 
 if __name__ == "__main__":

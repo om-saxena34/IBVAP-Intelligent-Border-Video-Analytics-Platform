@@ -8,6 +8,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.main import app
+from backend.services.alert_service import alert_service
+from backend.services.event_service import event_service
 from backend.services.stream_manager import stream_manager
 
 try:
@@ -19,10 +21,15 @@ except ImportError:
 
 
 @pytest.fixture(autouse=True)
-def cleanup_streams():
-    """Ensure all background stream workers are stopped and cleaned up after each test."""
+def cleanup_state():
+    """Ensure all background stream workers, events, and alerts are cleaned up after each test."""
+    event_service.clear()
+    alert_service.clear()
     yield
     stream_manager.shutdown_all()
+    event_service.clear()
+    alert_service.clear()
+
 
 
 @pytest.fixture

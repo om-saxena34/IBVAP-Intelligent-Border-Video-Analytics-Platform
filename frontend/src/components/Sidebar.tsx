@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useHealth } from '../hooks/useHealth';
+import { useAlerts } from '../hooks/useAlerts';
+import { useEvents } from '../hooks/useEvents';
 
 interface SidebarProps {
   onOpenConnectModal?: () => void;
@@ -7,6 +9,8 @@ interface SidebarProps {
 
 export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
   const { health, loading, error } = useHealth(8000);
+  const { activeCount: activeAlertsCount, loading: alertsLoading } = useAlerts(4000);
+  const { events, loading: eventsLoading } = useEvents(4000);
 
   const isOnline = Boolean(health && !error && health.status === 'healthy');
 
@@ -59,7 +63,11 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
         >
           <span className="nav-icon">⚡</span>
           <span className="nav-label">Alerts</span>
-          <span className="nav-counter count-na">N/A</span>
+          {!alertsLoading && (
+            <span className={`nav-counter ${activeAlertsCount > 0 ? 'count-alert' : 'count-muted'}`}>
+              {activeAlertsCount}
+            </span>
+          )}
         </NavLink>
 
         <NavLink
@@ -68,8 +76,11 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
         >
           <span className="nav-icon">📋</span>
           <span className="nav-label">Events</span>
-          <span className="nav-counter count-na">N/A</span>
+          {!eventsLoading && (
+            <span className="nav-counter count-event">{events.length}</span>
+          )}
         </NavLink>
+
 
         <div className="nav-section-label">ANALYTICS & SYSTEM</div>
         <NavLink

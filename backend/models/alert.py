@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
-from typing import List
 
 class Severity(str, Enum):
     """Severity level of an event or alert."""
@@ -29,13 +29,13 @@ class Alert(BaseModel):
     camera_id: str = Field(
         ...,
         description="Camera that generated the alert",
-        examples=["CAM_001"],
+        examples=["CAM-001"],
     )
 
     event_type: str = Field(
         ...,
         description="Type of detected event",
-        examples=["Virtual Fence Breach"],
+        examples=["VIRTUAL_FENCE_BREACH"],
     )
 
     severity: Severity = Field(
@@ -54,25 +54,61 @@ class Alert(BaseModel):
         description="Time when the alert was generated",
     )
 
+    confidence: Optional[float] = Field(
+        default=0.92,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score of the alert detection",
+        examples=[0.92],
+    )
+
+    details: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Forensic context and detection details",
+    )
+
 class CreateAlertRequest(BaseModel):
     """Request payload to create a new alert."""
 
     camera_id: str = Field(
         ...,
         description="Camera that generated the alert",
-        examples=["CAM_001"],
+        examples=["CAM-001"],
     )
 
     event_type: str = Field(
         ...,
         description="Type of detected event",
-        examples=["Virtual Fence Breach"],
+        examples=["VIRTUAL_FENCE_BREACH"],
     )
 
     severity: Severity = Field(
         ...,
         description="Severity level of the alert",
         examples=[Severity.HIGH],
+    )
+
+    status: Optional[AlertStatus] = Field(
+        default=AlertStatus.ACTIVE,
+        description="Initial status of the alert",
+    )
+
+    confidence: Optional[float] = Field(
+        default=0.92,
+        ge=0.0,
+        le=1.0,
+        description="Detection confidence score",
+        examples=[0.92],
+    )
+
+    timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp of the alert",
+    )
+
+    details: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional forensic context and detection details",
     )
 
 class AlertListResponse(BaseModel):
