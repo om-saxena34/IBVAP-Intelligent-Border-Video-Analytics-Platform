@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useEvents } from '../hooks/useEvents';
 import { intelligenceApi } from '../api/intelligenceApi';
 import type { Severity } from '../api/alertsApi';
@@ -21,11 +21,33 @@ const EVENT_TYPES = [
 export default function EventsPage() {
   const { events, loading, error, refresh } = useEvents(3500);
 
-
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [severityFilter, setSeverityFilter] = useState<'ALL' | Severity>('ALL');
   const [cameraSearch, setCameraSearch] = useState<string>('');
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const todayEvents = useMemo(() => {
+    const now = new Date();
+    return events.filter((event) => {
+      const timestamp = new Date(event.timestamp);
+      return (
+        timestamp.getDate() === now.getDate() &&
+        timestamp.getMonth() === now.getMonth() &&
+        timestamp.getFullYear() === now.getFullYear()
+      );
+    });
+  }, [events]);
+
+  const criticalCount = useMemo(
+    () => events.filter((event) => event.severity === 'CRITICAL').length,
+    [events]
+  );
+
+  const highCount = useMemo(
+    () => events.filter((event) => event.severity === 'HIGH').length,
+    [events]
+  );
 
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
@@ -54,6 +76,15 @@ export default function EventsPage() {
       setIsSimulating(false);
     }
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
 
   const formatTimestamp = (ts: string) => {
     try {
@@ -120,23 +151,48 @@ export default function EventsPage() {
           <div>
             <h2 className="section-heading">Surveillance Event Journal</h2>
             <span className="section-caption">
-              Continuous chronological audit log of optical detections, tripwire breaches, and movement events
+              Continuous chronological audit log of optical detections, tripwire breaches, and perimeter movements
             </span>
           </div>
         </div>
 
-        <div className="header-actions-group">
-          <span className="events-count-highlight font-mono">
-            EVENTS TODAY: {events.length}
-          </span>
+        <div className="header-actions-group" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={refresh}
-            title="Refresh event log"
+            className="btn btn-secondary btn-tactical btn-sm"
+            onClick={() => void handleRefresh()}
+            disabled={refreshing || loading}
           >
-            ↻ Refresh
+            {refreshing ? 'Refreshing...' : '↻ Refresh'}
           </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-tactical btn-sm"
+            onClick={() => handleSimulate('RESTRICTED_ZONE_ENTRY')}
+            disabled={isSimulating}
+          >
+            ⚡ Test Event Simulation
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Grid */}
+      <div className="alerts-summary-ribbon" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', margin: '1rem 0' }}>
+        <div className="ribbon-card">
+          <span className="ribbon-label">TOTAL EVENTS</span>
+          <span className="ribbon-val text-primary font-mono">{events.length}</span>
+        </div>
+        <div className="ribbon-card">
+          <span className="ribbon-label">EVENTS TODAY</span>
+          <span className="ribbon-val text-blue font-mono">{todayEvents.length}</span>
+        </div>
+        <div className="ribbon-card">
+          <span className="ribbon-label">CRITICAL EVENTS</span>
+          <span className="ribbon-val text-red font-mono" style={{ color: '#ef4444' }}>{criticalCount}</span>
+        </div>
+        <div className="ribbon-card">
+          <span className="ribbon-label">HIGH EVENTS</span>
+          <span className="ribbon-val text-orange font-mono" style={{ color: '#f97316' }}>{highCount}</span>
         </div>
       </div>
 
@@ -149,9 +205,9 @@ export default function EventsPage() {
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
           >
-            {EVENT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t === 'ALL' ? 'ALL EVENT TYPES' : t.replace(/_/g, ' ')}
+            {EVENT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type.replace(/_/g, ' ')}
               </option>
             ))}
           </select>
@@ -177,7 +233,7 @@ export default function EventsPage() {
           <input
             type="text"
             className="filter-search-input font-mono"
-            placeholder="Filter Camera ID or Event..."
+            placeholder="Search Camera or Threat Type..."
             value={cameraSearch}
             onChange={(e) => setCameraSearch(e.target.value)}
           />
@@ -193,158 +249,92 @@ export default function EventsPage() {
         </div>
       </div>
 
-      {/* Quick Test Toolbar */}
-      <div className="event-simulator-bar">
-        <span className="sim-bar-label font-mono">⚡ QUICK EVENT SIMULATION:</span>
-        <div className="sim-buttons-wrap">
-          <button
-            type="button"
-            className="btn btn-tactical-sim btn-sm"
-            onClick={() => handleSimulate('VIRTUAL_FENCE_BREACH')}
-            disabled={isSimulating}
-          >
-            ⚡ Fence Breach
-          </button>
-          <button
-            type="button"
-            className="btn btn-tactical-sim btn-sm"
-            onClick={() => handleSimulate('RESTRICTED_ZONE_ENTRY')}
-            disabled={isSimulating}
-          >
-            🛑 Restricted Entry
-          </button>
-          <button
-            type="button"
-            className="btn btn-tactical-sim btn-sm"
-            onClick={() => handleSimulate('LOITERING')}
-            disabled={isSimulating}
-          >
-            ⏳ Loitering
-          </button>
-          <button
-            type="button"
-            className="btn btn-tactical-sim btn-sm"
-            onClick={() => handleSimulate('UNUSUAL_MOVEMENT')}
-            disabled={isSimulating}
-          >
-            🔄 Unusual Move
-          </button>
-          <button
-            type="button"
-            className="btn btn-tactical-sim btn-sm"
-            onClick={() => handleSimulate('NIGHT_TIME_MOVEMENT')}
-            disabled={isSimulating}
-          >
-            🌙 Night Movement
-          </button>
-          <button
-            type="button"
-            className="btn btn-tactical-sim btn-sm"
-            onClick={() => handleSimulate('GROUP_MOVEMENT')}
-            disabled={isSimulating}
-          >
-            👥 Group Move
-          </button>
-          <button
-            type="button"
-            className="btn btn-tactical-sim btn-sm"
-            onClick={() => handleSimulate('PERSON_DETECTED')}
-            disabled={isSimulating}
-          >
-            👤 Person
-          </button>
-        </div>
-      </div>
-
-      {/* Error Notice */}
+      {/* Error State */}
       {error && (
-        <div className="modal-alert-error" role="alert">
+        <div className="modal-alert-error" role="alert" style={{ margin: '1rem 0' }}>
           <span className="alert-icon">⚠</span>
-          <span>Events API Error: {error}</span>
+          <span>{error}</span>
+          <button type="button" className="btn btn-sm" onClick={() => void refresh()}>
+            Retry
+          </button>
         </div>
       )}
 
-      {/* Events Log Table */}
-      <div className="tactical-table-card">
-        {loading && events.length === 0 ? (
-          <div className="table-loading-box">
-            <div className="loading-spinner" />
-            <span>Streaming chronological event telemetry...</span>
-          </div>
-        ) : filteredEvents.length === 0 ? (
-          <div className="table-empty-box">
-            <div className="empty-icon">📋</div>
-            <h3>EVENTS TODAY: 0</h3>
-            <p>
-              No surveillance events match the selected criteria. Detections from active video streams or test simulations will be logged chronologically.
-            </p>
-          </div>
-        ) : (
-          <div className="tactical-table-wrapper">
-            <table className="tactical-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>EVENT TYPE</th>
-                  <th>CAMERA ID</th>
-                  <th>SEVERITY</th>
-                  <th>CONFIDENCE</th>
-                  <th>TIMESTAMP</th>
-                  <th>FORENSIC DETAILS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEvents.map((evt) => {
-                  const { time, date } = formatTimestamp(evt.timestamp);
-                  const icon = getEventTypeIcon(evt.event_type);
-
-                  return (
-                    <tr key={evt.id} className={`event-row severity-${evt.severity.toLowerCase()}`}>
-                      <td className="font-mono text-muted">#{evt.id}</td>
-                      <td>
-                        <div className="event-type-cell">
-                          <span className="event-icon">{icon}</span>
-                          <span className="event-type-text">
-                            {evt.event_type.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="camera-pill font-mono">{evt.camera_id}</span>
-                      </td>
-                      <td>
-                        <span className={`severity-tag ${getSeverityClass(evt.severity)}`}>
-                          {evt.severity}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="conf-pill font-mono">
-                          {evt.confidence ? `${(evt.confidence * 100).toFixed(0)}%` : '92%'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="time-cell font-mono">
-                          <span className="time-primary">{time}</span>
-                          <span className="time-secondary text-muted">{date}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="details-cell font-mono text-muted">
-                          {evt.details && (evt.details as Record<string, unknown>).rule ? (
-                            <span>{String((evt.details as Record<string, unknown>).rule)}</span>
-                          ) : (
-                            <span>Optical AI telemetry verification</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Main Events Table / List */}
+      {loading && events.length === 0 ? (
+        <div className="alert-loading-state" style={{ padding: '3rem', textAlign: 'center' }}>
+          <div className="loading-spinner" />
+          <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Querying surveillance event telemetry...</p>
+        </div>
+      ) : filteredEvents.length === 0 ? (
+        <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+          <div className="empty-state-icon" style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✓</div>
+          <h3>No Events Found</h3>
+          <p style={{ color: 'var(--text-muted)' }}>
+            No surveillance events match the selected filter criteria.
+          </p>
+        </div>
+      ) : (
+        <div className="events-table-wrapper" style={{ marginTop: '1rem', overflowX: 'auto' }}>
+          <table className="events-table font-mono" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color, #333)' }}>
+                <th style={{ padding: '0.75rem' }}>ID</th>
+                <th style={{ padding: '0.75rem' }}>EVENT TYPE</th>
+                <th style={{ padding: '0.75rem' }}>CAMERA</th>
+                <th style={{ padding: '0.75rem' }}>SEVERITY</th>
+                <th style={{ padding: '0.75rem' }}>CONFIDENCE</th>
+                <th style={{ padding: '0.75rem' }}>TIMESTAMP</th>
+                <th style={{ padding: '0.75rem' }}>DETAILS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEvents.map((evt) => {
+                const { time, date } = formatTimestamp(evt.timestamp);
+                return (
+                  <tr key={evt.id} style={{ borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.05))' }}>
+                    <td style={{ padding: '0.75rem', opacity: 0.7 }}>#{evt.id}</td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span className="event-type-name" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>{getEventTypeIcon(evt.event_type)}</span>
+                        <span>{evt.event_type.replace(/_/g, ' ')}</span>
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span className="camera-pill font-mono">{evt.camera_id}</span>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span className={`severity-tag ${getSeverityClass(evt.severity)}`}>
+                        {evt.severity}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <span className="conf-pill font-mono">
+                        {evt.confidence ? `${(evt.confidence * 100).toFixed(0)}%` : '92%'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div className="time-cell font-mono">
+                        <span className="time-primary" style={{ display: 'block' }}>{time}</span>
+                        <span className="time-secondary text-muted" style={{ fontSize: '0.75rem', opacity: 0.6 }}>{date}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <div className="details-cell font-mono text-muted" style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                        {evt.details && (evt.details as Record<string, unknown>).rule ? (
+                          <span>{String((evt.details as Record<string, unknown>).rule)}</span>
+                        ) : (
+                          <span>Optical AI telemetry verification</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

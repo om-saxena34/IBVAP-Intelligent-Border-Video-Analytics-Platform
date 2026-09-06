@@ -1,18 +1,28 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useAlerts } from '../hooks/useAlerts';
 import { intelligenceApi } from '../api/intelligenceApi';
 import type { Severity, AlertStatus } from '../api/alertsApi';
 
 export default function AlertsPage() {
-  const { alerts, resolvedAlerts, activeCount, loading, error, refresh, resolveAlert } =
+  const { alerts, resolvedAlerts, activeAlerts, activeCount, loading, error, refresh, resolveAlert } =
     useAlerts(3500);
 
-
-  const [statusFilter, setStatusFilter] = useState<'ALL' | AlertStatus>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | AlertStatus>('ACTIVE');
   const [severityFilter, setSeverityFilter] = useState<'ALL' | Severity>('ALL');
   const [cameraSearch, setCameraSearch] = useState<string>('');
   const [resolvingId, setResolvingId] = useState<number | null>(null);
   const [simulating, setSimulating] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const criticalCount = useMemo(
+    () => activeAlerts.filter((a) => a.severity === 'CRITICAL').length,
+    [activeAlerts]
+  );
+
+  const highCount = useMemo(
+    () => activeAlerts.filter((a) => a.severity === 'HIGH').length,
+    [activeAlerts]
+  );
 
   const filteredAlerts = useMemo(() => {
     return alerts.filter((alert) => {
@@ -51,6 +61,15 @@ export default function AlertsPage() {
     }
   };
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
+
   const formatTimestamp = (ts: string) => {
     try {
       const d = new Date(ts);
@@ -87,15 +106,20 @@ export default function AlertsPage() {
           <div>
             <h2 className="section-heading">Perimeter Threat Alerts</h2>
             <span className="section-caption">
-              Active border security breaches, tripwire crossings, and correlated incidents
+              Real-time border intrusion alerts, tripwire breaches, and correlated tactical incidents
             </span>
           </div>
         </div>
 
-        <div className="header-actions-group">
-          <span className="active-alerts-highlight font-mono">
-            ACTIVE ALERTS: {activeCount}
-          </span>
+        <div className="header-actions-group" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-tactical btn-sm"
+            onClick={() => void handleRefresh()}
+            disabled={refreshing || loading}
+          >
+            {refreshing ? 'Refreshing...' : '↻ Refresh'}
+          </button>
           <button
             type="button"
             className="btn btn-primary btn-tactical btn-sm"
@@ -107,19 +131,27 @@ export default function AlertsPage() {
         </div>
       </div>
 
-      {/* Stats Ribbon */}
-      <div className="alerts-summary-ribbon">
+      {/* Stats Summary Grid */}
+      <div className="alerts-summary-ribbon" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', margin: '1rem 0' }}>
+        <div className="ribbon-card">
+          <span className="ribbon-label">TOTAL ALERTS</span>
+          <span className="ribbon-val text-primary font-mono">{alerts.length}</span>
+        </div>
         <div className="ribbon-card">
           <span className="ribbon-label">ACTIVE ALERTS</span>
           <span className="ribbon-val text-amber font-mono">{activeCount}</span>
         </div>
         <div className="ribbon-card">
-          <span className="ribbon-label">RESOLVED ALERTS</span>
-          <span className="ribbon-val text-green font-mono">{resolvedAlerts.length}</span>
+          <span className="ribbon-label">CRITICAL</span>
+          <span className="ribbon-val text-red font-mono" style={{ color: '#ef4444' }}>{criticalCount}</span>
         </div>
         <div className="ribbon-card">
-          <span className="ribbon-label">TOTAL RECORDED</span>
-          <span className="ribbon-val text-primary font-mono">{alerts.length}</span>
+          <span className="ribbon-label">HIGH</span>
+          <span className="ribbon-val text-orange font-mono" style={{ color: '#f97316' }}>{highCount}</span>
+        </div>
+        <div className="ribbon-card">
+          <span className="ribbon-label">RESOLVED</span>
+          <span className="ribbon-val text-green font-mono">{resolvedAlerts.length}</span>
         </div>
       </div>
 
@@ -128,7 +160,7 @@ export default function AlertsPage() {
         <div className="filter-group">
           <span className="filter-label">STATUS:</span>
           <div className="filter-pills">
-            {(['ALL', 'ACTIVE', 'RESOLVED'] as const).map((st) => (
+            {(['ACTIVE', 'ALL', 'RESOLVED'] as const).map((st) => (
               <button
                 key={st}
                 type="button"
@@ -177,143 +209,81 @@ export default function AlertsPage() {
         </div>
       </div>
 
-      {/* Error Notice */}
+      {/* Error state */}
       {error && (
-        <div className="modal-alert-error" role="alert">
+        <div className="modal-alert-error" role="alert" style={{ margin: '1rem 0' }}>
           <span className="alert-icon">⚠</span>
-          <span>Alert API Error: {error}</span>
+          <span>{error}</span>
+          <button type="button" className="btn btn-sm" onClick={() => void refresh()}>
+            Retry
+          </button>
         </div>
       )}
 
-      {/* Alerts Table / List */}
-      <div className="tactical-table-card">
-        {loading && alerts.length === 0 ? (
-          <div className="table-loading-box">
-            <div className="loading-spinner" />
-            <span>Loading threat intelligence alerts...</span>
-          </div>
-        ) : filteredAlerts.length === 0 ? (
-          <div className="table-empty-box">
-            <div className="empty-icon">🛡</div>
-            <h3>
-              {statusFilter === 'ACTIVE' || statusFilter === 'ALL'
-                ? 'ACTIVE ALERTS: 0'
-                : 'No alerts matching criteria'}
-            </h3>
-            <p>
-              Perimeter security nodes report zero active intrusions. New HIGH and CRITICAL detections will appear automatically.
-            </p>
-            <div className="test-quick-bar">
-              <span className="quick-label">Trigger Test Threat:</span>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => handleSimulate('VIRTUAL_FENCE_BREACH')}
+      {/* Main Alert List */}
+      {loading && alerts.length === 0 ? (
+        <div className="alert-loading-state" style={{ padding: '3rem', textAlign: 'center' }}>
+          <div className="loading-spinner" />
+          <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Querying tactical alerts...</p>
+        </div>
+      ) : filteredAlerts.length === 0 ? (
+        <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+          <div className="empty-state-icon" style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🛡</div>
+          <h3>No Alerts Found</h3>
+          <p style={{ color: 'var(--text-muted)' }}>
+            No alerts matching the selected filter criteria are currently on file.
+          </p>
+        </div>
+      ) : (
+        <div className="alerts-feed-list" style={{ marginTop: '1rem' }}>
+          {filteredAlerts.map((alert) => {
+            const { time, date } = formatTimestamp(alert.timestamp);
+            return (
+              <div
+                key={alert.id}
+                className={`alert-feed-item severity-${alert.severity.toLowerCase()}`}
               >
-                Virtual Fence Breach
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => handleSimulate('RESTRICTED_ZONE_ENTRY')}
-              >
-                Restricted Zone Entry
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => handleSimulate('SUSPICIOUS_SEQUENCE')}
-              >
-                Suspicious Sequence (CRITICAL)
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="tactical-table-wrapper">
-            <table className="tactical-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>SEVERITY</th>
-                  <th>THREAT EVENT</th>
-                  <th>CAMERA ID</th>
-                  <th>CONFIDENCE</th>
-                  <th>TIMESTAMP</th>
-                  <th>STATUS</th>
-                  <th>ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAlerts.map((alert) => {
-                  const { time, date } = formatTimestamp(alert.timestamp);
-                  const isResolved = alert.status === 'RESOLVED';
+                <div className="alert-feed-left">
+                  <span className={`severity-tag ${getSeverityClass(alert.severity)}`}>
+                    {alert.severity}
+                  </span>
+                  <div className="alert-feed-meta">
+                    <h4 className="alert-feed-type">
+                      {alert.event_type.replace(/_/g, ' ')}
+                    </h4>
+                    <div className="alert-feed-sub">
+                      <span className="alert-cam-id font-mono">🎥 {alert.camera_id}</span>
+                      <span className="alert-time font-mono">🕒 {time} {date && `· ${date}`}</span>
+                      {alert.confidence && (
+                        <span className="alert-confidence font-mono">
+                          ⚡ {(alert.confidence * 100).toFixed(0)}% CONF
+                        </span>
+                      )}
+                      <span className={`status-pill status-${alert.status.toLowerCase()} font-mono`}>
+                        [{alert.status}]
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                  return (
-                    <tr
-                      key={alert.id}
-                      className={`alert-row ${isResolved ? 'resolved-row' : 'active-row'} severity-${alert.severity.toLowerCase()}`}
+                <div className="alert-feed-actions">
+                  {alert.status === 'ACTIVE' && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger btn-sm font-mono"
+                      onClick={() => handleResolve(alert.id)}
+                      disabled={resolvingId === alert.id}
+                      title="Mark alert as resolved"
                     >
-                      <td className="font-mono text-muted">#{alert.id}</td>
-                      <td>
-                        <span className={`severity-tag ${getSeverityClass(alert.severity)}`}>
-                          {alert.severity}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="threat-cell">
-                          <strong className="threat-name">
-                            {alert.event_type.replace(/_/g, ' ')}
-                          </strong>
-                          {alert.details && (
-                            <span className="threat-detail text-muted">
-                              {String((alert.details as Record<string, unknown>).rule || '')}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="camera-pill font-mono">{alert.camera_id}</span>
-                      </td>
-                      <td>
-                        <span className="conf-pill font-mono">
-                          {alert.confidence ? `${(alert.confidence * 100).toFixed(0)}%` : '92%'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="time-cell font-mono">
-                          <span className="time-primary">{time}</span>
-                          <span className="time-secondary text-muted">{date}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span
-                          className={`status-pill ${isResolved ? 'status-resolved' : 'status-active'}`}
-                        >
-                          ● {alert.status}
-                        </span>
-                      </td>
-                      <td>
-                        {!isResolved ? (
-                          <button
-                            type="button"
-                            className="btn btn-outline-danger btn-sm font-mono"
-                            onClick={() => handleResolve(alert.id)}
-                            disabled={resolvingId === alert.id}
-                          >
-                            {resolvingId === alert.id ? 'Resolving...' : 'Resolve'}
-                          </button>
-                        ) : (
-                          <span className="text-muted font-mono text-sm">Resolved ✓</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                      {resolvingId === alert.id ? 'Resolving...' : 'Resolve'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

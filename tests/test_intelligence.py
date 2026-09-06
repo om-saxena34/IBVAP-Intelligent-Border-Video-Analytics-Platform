@@ -66,6 +66,7 @@ def test_evaluate_virtual_fence_crossing(client: TestClient):
     """Verify movement crossing a tripwire triggers VIRTUAL_FENCE_BREACH and HIGH severity alert."""
     payload = {
         "camera_id": "CAM-001",
+        "current_time": "2026-09-06T12:00:00",
         "tracks": [
             {
                 "subject_id": "TRK-001",

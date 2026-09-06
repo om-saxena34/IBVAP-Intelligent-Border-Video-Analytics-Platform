@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useHealth } from '../hooks/useHealth';
 import { useStreams } from '../hooks/useStreams';
 import { useAlerts } from '../hooks/useAlerts';
 import { useEvents } from '../hooks/useEvents';
+
 import StatCard from '../components/StatCard';
 import CameraGrid from '../components/CameraGrid';
 import AlertPanel from '../components/AlertPanel';
@@ -38,29 +39,65 @@ export default function DashboardPage({
   } = useStreams(5000);
 
   const {
+    alerts,
+    activeAlerts,
     activeCount: activeAlertsCount,
+    loading: alertsLoading,
+    error: alertsError,
     refresh: refreshAlerts,
   } = useAlerts(4000);
 
   const {
     events,
+    loading: eventsLoading,
+    error: eventsError,
     refresh: refreshEvents,
   } = useEvents(4000);
 
+  const criticalAlerts = useMemo(
+    () => activeAlerts.filter((alert) => alert.severity === 'CRITICAL').length,
+    [activeAlerts]
+  );
+
+  const highAlerts = useMemo(
+    () => activeAlerts.filter((alert) => alert.severity === 'HIGH').length,
+    [activeAlerts]
+  );
+
+  const todayEvents = useMemo(() => {
+    const now = new Date();
+    return events.filter((event) => {
+      const timestamp = new Date(event.timestamp);
+      return (
+        timestamp.getDate() === now.getDate() &&
+        timestamp.getMonth() === now.getMonth() &&
+        timestamp.getFullYear() === now.getFullYear()
+      );
+    });
+  }, [events]);
+
   const handleCameraDisconnected = useCallback(
     (cameraId: string) => {
-      onNotify(`Camera stream "${cameraId}" disconnected.`, 'success');
+      onNotify(
+        `Camera stream "${cameraId}" disconnected.`,
+        'success',
+      );
+
       refreshStreams();
       refreshHealth();
     },
-    [onNotify, refreshStreams, refreshHealth]
+    [
+      onNotify,
+      refreshStreams,
+      refreshHealth,
+    ],
   );
 
   const handleCameraError = useCallback(
     (err: string) => {
       onNotify(err, 'error');
     },
-    [onNotify]
+    [onNotify],
   );
 
   const handleFenceEventTriggered = useCallback(
@@ -72,45 +109,70 @@ export default function DashboardPage({
     [onNotify, refreshAlerts, refreshEvents]
   );
 
-  // Backend-driven counts from actual streams
+  /* ------------------------------------------------------------------------ */
+  /* Camera statistics                                                        */
+  /* ------------------------------------------------------------------------ */
+
   const totalCameras = streams.length;
-  const onlineCameras = streams.filter((s) => s.status === 'ONLINE').length;
-  const offlineCameras = streams.filter((s) => s.status === 'OFFLINE').length;
-  const reconnectingCameras = streams.filter((s) => s.status === 'RECONNECTING').length;
-  const errorCameras = streams.filter((s) => s.status === 'ERROR').length;
+
+  const onlineCameras = streams.filter(
+    (stream) =>
+      stream.status === 'ONLINE',
+  ).length;
+
+  const offlineCameras = streams.filter(
+    (stream) =>
+      stream.status === 'OFFLINE',
+  ).length;
+
+  const reconnectingCameras = streams.filter(
+    (stream) =>
+      stream.status === 'RECONNECTING',
+  ).length;
+
+  const errorCameras = streams.filter(
+    (stream) =>
+      stream.status === 'ERROR',
+  ).length;
 
   const onlineSubtitle =
     totalCameras === 0
       ? 'No active streams'
       : onlineCameras === totalCameras
-      ? 'All streams operational'
-      : `${totalCameras - onlineCameras} not streaming (${offlineCameras} offline${
-          reconnectingCameras > 0 ? `, ${reconnectingCameras} reconnecting` : ''
-        }${errorCameras > 0 ? `, ${errorCameras} error` : ''})`;
+        ? 'All streams operational'
+        : `${totalCameras - onlineCameras} not streaming (${offlineCameras} offline${
+            reconnectingCameras > 0
+              ? `, ${reconnectingCameras} reconnecting`
+              : ''
+          }${
+            errorCameras > 0
+              ? `, ${errorCameras} error`
+              : ''
+          })`;
 
-  const alertsSubtitle =
-    activeAlertsCount === 0
-      ? 'Perimeter perimeter secure'
-      : activeAlertsCount === 1
-      ? '1 active threat requires attention'
-      : `${activeAlertsCount} active threats require attention`;
-
-  const eventsSubtitle =
-    events.length === 0
-      ? 'No audit entries logged'
-      : `${events.length} chronological audit entries`;
+  const telemetryError = alertsError || eventsError;
 
   return (
     <div className="page-container">
-      {/* 4 Dashboard Stat Cards */}
-      <section className="stat-cards-grid" aria-label="Surveillance Statistics">
+      {/* ------------------------------------------------------------------ */}
+      {/* Dashboard Statistics                                               */}
+      {/* ------------------------------------------------------------------ */}
+
+      <section
+        className="stat-cards-grid"
+        aria-label="Surveillance Statistics"
+      >
         <StatCard
           title="Total Cameras"
           value={totalCameras}
           sub={
             totalCameras === 0
               ? 'No registered surveillance nodes'
-              : `${totalCameras} configured border node${totalCameras === 1 ? '' : 's'}`
+              : `${totalCameras} configured border node${
+                  totalCameras === 1
+                    ? ''
+                    : 's'
+                }`
           }
           accent="blue"
           icon="📹"
@@ -122,42 +184,119 @@ export default function DashboardPage({
           sub={onlineSubtitle}
           accent="green"
           icon="⚡"
-          badge={onlineCameras > 0 ? 'ACTIVE' : undefined}
+          badge={
+            onlineCameras > 0
+              ? 'ACTIVE'
+              : undefined
+          }
         />
 
         <StatCard
           title="Active Alerts"
-          value={activeAlertsCount}
-          sub={alertsSubtitle}
-          accent={activeAlertsCount > 0 ? 'amber' : 'green'}
+          value={
+            alertsLoading && alerts.length === 0
+              ? '...'
+              : activeAlertsCount
+          }
+          sub={
+            alertsError
+              ? 'Telemetry unavailable'
+              : activeAlertsCount === 0
+                ? 'Perimeter secure'
+                : `${criticalAlerts} critical, ${highAlerts} high`
+          }
+          accent={
+            activeAlertsCount > 0
+              ? 'amber'
+              : 'green'
+          }
           icon="🚨"
-          badge={activeAlertsCount > 0 ? 'THREAT' : 'SECURE'}
+          badge={
+            activeAlertsCount > 0
+              ? 'THREAT'
+              : 'SECURE'
+          }
         />
 
         <StatCard
           title="Events Today"
-          value={events.length}
-          sub={eventsSubtitle}
+          value={
+            eventsLoading && events.length === 0
+              ? '...'
+              : todayEvents.length
+          }
+          sub={
+            eventsError
+              ? 'Telemetry unavailable'
+              : todayEvents.length === 0
+                ? 'No events recorded today'
+                : `${events.length} total surveillance events`
+          }
           accent="blue"
           icon="📋"
         />
       </section>
 
-      {/* Live Surveillance Feeds Section */}
-      <section className="dashboard-section" aria-label="Live Video Grid">
+      {/* ------------------------------------------------------------------ */}
+      {/* Critical Telemetry                                                 */}
+      {/* ------------------------------------------------------------------ */}
+
+      {telemetryError && (
+        <div
+          className="modal-alert-error"
+          role="alert"
+        >
+          <span className="alert-icon">
+            ⚠
+          </span>
+
+          <span>
+            {telemetryError}
+          </span>
+
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => {
+              void refreshAlerts();
+              void refreshEvents();
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Live Surveillance Feeds                                             */}
+      {/* ------------------------------------------------------------------ */}
+
+      <section
+        className="dashboard-section"
+        aria-label="Live Video Grid"
+      >
         <div className="section-header-bar">
           <div className="section-title-wrap">
             <span className="section-indicator" />
+
             <div>
-              <h3 className="section-heading">Live Surveillance Feeds</h3>
+              <h3 className="section-heading">
+                Live Surveillance Feeds
+              </h3>
+
               <span className="section-caption">
                 {streams.length === 0
                   ? 'No active streams detected'
-                  : `${streams.length} registered stream channel${streams.length === 1 ? '' : 's'}`}
+                  : `${streams.length} registered stream channel${
+                      streams.length === 1
+                        ? ''
+                        : 's'
+                    }`}
               </span>
             </div>
           </div>
-          <div className="header-action-buttons">
+
+          <div className="header-action-buttons" style={{ display: 'flex', gap: '0.75rem' }}>
             <button
               type="button"
               className="btn btn-secondary btn-tactical btn-sm"
@@ -179,23 +318,39 @@ export default function DashboardPage({
         </div>
 
         {streamsError && (
-          <div className="modal-alert-error" role="alert">
-            <span className="alert-icon">⚠</span>
-            <span>Error fetching streams: {streamsError}</span>
+          <div
+            className="modal-alert-error"
+            role="alert"
+          >
+            <span className="alert-icon">
+              ⚠
+            </span>
+
+            <span>
+              Error fetching streams:{' '}
+              {streamsError}
+            </span>
           </div>
         )}
 
         <CameraGrid
           streams={streams}
           loading={streamsLoading}
-          onOpenConnectModal={onOpenConnectModal}
-          onCameraDisconnected={handleCameraDisconnected}
+          onOpenConnectModal={
+            onOpenConnectModal
+          }
+          onCameraDisconnected={
+            handleCameraDisconnected
+          }
           onError={handleCameraError}
           showFilters={streams.length > 0}
         />
       </section>
 
-      {/* Secondary Row: Recent Border Alerts & System Telemetry */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Recent Alerts + System Telemetry                                    */}
+      {/* ------------------------------------------------------------------ */}
+
       <div className="dashboard-grid-dual">
         <AlertPanel onResolveSuccess={() => { refreshAlerts(); refreshEvents(); }} />
         <SystemInfo
@@ -206,7 +361,10 @@ export default function DashboardPage({
         />
       </div>
 
-      {/* AI Detection Capabilities Section */}
+      {/* ------------------------------------------------------------------ */}
+      {/* AI Detection Capabilities                                           */}
+      {/* ------------------------------------------------------------------ */}
+
       <CapabilityGrid />
 
       {/* Virtual Fence / Border Intelligence Modal */}
