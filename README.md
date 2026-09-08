@@ -230,15 +230,15 @@ pytest -v -s
 ## 8. Development Roadmap
 
 - [x] **Phase 1**: CCTV / MP4 Stream Ingestion, Health Monitoring, Auto-Reconnect & REST APIs.
-- [ ] **Phase 2**: Person & Vehicle Detection + Object Tracking.
-- [ ] **Phase 3**: Virtual Fence & Zone Boundary Violation Rules.
-- [ ] **Phase 4**: ANPR / OCR & Authorized Vehicle List Verification.
-- [ ] **Phase 5**: Suspicious Behaviors: Loitering, Wrong Direction & Night Movement.
-- [ ] **Phase 6**: Cross-Camera Logical Track ID Correlation (e.g. `P-1042`).
-- [ ] **Phase 7**: Explainable Threat Intelligence Scoring Engine.
-- [ ] **Phase 8**: Secure Tamper-Evident SHA-256 Audit Trail & Evidence Export.
-- [ ] **Phase 9**: Offline-First Edge Resiliency & Sync Protocol.
-- [ ] **Phase 10**: Unified React Command Center Dashboard.
+- [x] **Phase 2**: Person & Vehicle Detection + Object Tracking.
+- [x] **Phase 3**: Virtual Fence & Zone Boundary Violation Rules.
+- [x] **Phase 4**: ANPR / OCR & Authorized Vehicle List Verification.
+- [x] **Phase 5**: Suspicious Behaviors: Loitering, Wrong Direction & Night Movement.
+- [x] **Phase 6**: Cross-Camera Logical Track ID Correlation (e.g. `P-1042`).
+- [x] **Phase 7**: Explainable Threat Intelligence Scoring Engine.
+- [x] **Phase 8**: Secure Tamper-Evident SHA-256 Audit Trail & Evidence Export.
+- [x] **Phase 9**: Offline-First Edge Resiliency & Sync Protocol.
+- [x] **Phase 10**: Unified React Command Center Dashboard.
 
 ---
 
