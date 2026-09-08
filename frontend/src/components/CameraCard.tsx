@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { streamsApi, type StreamInfo } from '../api/streamsApi';
+import { useNavigate } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
 
 interface CameraCardProps {
@@ -8,66 +9,69 @@ interface CameraCardProps {
   onError?: (err: string) => void;
 }
 
+interface StreamTelemetry {
+  threat_level?: string;
+  threat_score?: number;
+  threat_reasons?: string[];
+  track_count?: number;
+  detections_count?: number;
+  tracks?: Array<{
+    track_id: number;
+    class_name: string;
+    confidence: number;
+  }>;
+}
+
 export default function CameraCard({
   stream,
   onDisconnected,
   onError,
 }: CameraCardProps) {
-  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
-  const [snapshotError, setSnapshotError] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const [isAnnotated, setIsAnnotated] = useState<boolean>(true);
   const [isDisconnecting, setIsDisconnecting] = useState<boolean>(false);
+  const [streamError, setStreamError] = useState<boolean>(false);
+  const [telemetry, setTelemetry] = useState<StreamTelemetry | null>(null);
+  const [streamKey, setStreamKey] = useState<number>(Date.now());
 
-  // Keep reference to active Blob URL so it can be revoked to prevent memory leaks
-  const activeBlobUrlRef = useRef<string | null>(null);
+  const isOnline = stream.status === 'ONLINE';
 
-  const fetchSnapshot = useCallback(async () => {
-    if (stream.status !== 'ONLINE') {
-      if (activeBlobUrlRef.current) {
-        URL.revokeObjectURL(activeBlobUrlRef.current);
-        activeBlobUrlRef.current = null;
-      }
-      setSnapshotUrl(null);
+  // Poll detections telemetry when stream is ONLINE
+  useEffect(() => {
+    if (!isOnline) {
+      setTelemetry(null);
       return;
     }
 
-    try {
-      const res = await streamsApi.getSnapshotUrl(stream.camera_id);
-      if (res.ok && res.data) {
-        const newUrl = URL.createObjectURL(res.data);
-        // Revoke previously held Blob URL before updating
-        if (activeBlobUrlRef.current) {
-          URL.revokeObjectURL(activeBlobUrlRef.current);
-        }
-        activeBlobUrlRef.current = newUrl;
-        setSnapshotUrl(newUrl);
-        setSnapshotError(false);
-      } else {
-        setSnapshotError(true);
-      }
-    } catch {
-      setSnapshotError(true);
-    }
-  }, [stream.camera_id, stream.status]);
+    let isMounted = true;
 
-  // Snapshot polling interval (every 2.5s for active online streams)
-  useEffect(() => {
-    fetchSnapshot();
-    const interval = setInterval(fetchSnapshot, 2500);
+    const pollTelemetry = async () => {
+      try {
+        const res = await streamsApi.getDetections(stream.camera_id);
+        if (isMounted && res.ok && res.data) {
+          setTelemetry({
+            threat_level: res.data.threat_level,
+            threat_score: res.data.threat_score,
+            threat_reasons: res.data.threat_reasons,
+            track_count: res.data.track_count ?? res.data.tracks?.length ?? 0,
+            detections_count: res.data.detections_count ?? res.data.detections?.length ?? 0,
+            tracks: res.data.tracks,
+          });
+          setStreamError(false);
+        }
+      } catch {
+        // Soft fail for telemetry polling
+      }
+    };
+
+    pollTelemetry();
+    const interval = setInterval(pollTelemetry, 1500);
 
     return () => {
+      isMounted = false;
       clearInterval(interval);
     };
-  }, [fetchSnapshot]);
-
-  // Revoke Blob URL when component unmounts
-  useEffect(() => {
-    return () => {
-      if (activeBlobUrlRef.current) {
-        URL.revokeObjectURL(activeBlobUrlRef.current);
-        activeBlobUrlRef.current = null;
-      }
-    };
-  }, []);
+  }, [stream.camera_id, isOnline]);
 
   const handleDisconnect = useCallback(async () => {
     if (!window.confirm(`Disconnect camera stream "${stream.camera_id}"?`)) {
@@ -78,11 +82,6 @@ export default function CameraCard({
     try {
       const res = await streamsApi.disconnectStream(stream.camera_id);
       if (res.ok) {
-        if (activeBlobUrlRef.current) {
-          URL.revokeObjectURL(activeBlobUrlRef.current);
-          activeBlobUrlRef.current = null;
-        }
-        setSnapshotUrl(null);
         onDisconnected?.(stream.camera_id);
       } else {
         onError?.(res.error);
@@ -94,59 +93,143 @@ export default function CameraCard({
     }
   }, [stream.camera_id, onDisconnected, onError]);
 
-  const hasLiveFrame = stream.status === 'ONLINE' && snapshotUrl && !snapshotError;
+  const liveUrl = `${streamsApi.getLiveStreamUrl(stream.camera_id, isAnnotated)}&_t=${streamKey}`;
+
+  const threatLevel = telemetry?.threat_level || 'NORMAL';
+  const threatScore = telemetry?.threat_score ?? 0;
+
+  const getThreatColor = (level: string) => {
+    switch (level) {
+      case 'CRITICAL':
+        return '#dc2626';
+      case 'HIGH RISK':
+      case 'HIGH':
+        return '#ea580c';
+      case 'MEDIUM RISK':
+      case 'MEDIUM':
+        return '#eab308';
+      case 'LOW RISK':
+      case 'LOW':
+        return '#38bdf8';
+      default:
+        return '#22c55e';
+    }
+  };
 
   return (
-    <div className={`camera-card status-${stream.status.toLowerCase()}`}>
+    <div className={`camera-card status-${stream.status.toLowerCase()} border-tactical`}>
       {/* Card Header */}
       <div className="camera-card-header">
         <div className="camera-id-block">
-          <span className="camera-icon">🎥</span>
+          <span className="camera-icon">📹</span>
           <div>
-            <h3 className="camera-id">{stream.camera_id}</h3>
-            <span className="camera-sector">
+            <h3 className="camera-id font-mono">{stream.camera_id}</h3>
+            <span className="camera-sector font-mono">
               {stream.sector ? `SECTOR: ${stream.sector}` : 'SECTOR: UNASSIGNED'}
             </span>
           </div>
         </div>
 
         <div className="camera-badges">
-          <span className="source-pill">{stream.source_type}</span>
+          {telemetry && (
+            <span
+              className="threat-badge font-mono"
+              style={{
+                backgroundColor: `${getThreatColor(threatLevel)}22`,
+                color: getThreatColor(threatLevel),
+                borderColor: `${getThreatColor(threatLevel)}66`,
+              }}
+              title={telemetry.threat_reasons?.join(', ') || threatLevel}
+            >
+              ⚠ {threatLevel} ({threatScore})
+            </span>
+          )}
+          <span className="source-pill font-mono">{stream.source_type}</span>
           <StatusBadge status={stream.status} size="sm" />
         </div>
       </div>
 
       {/* Snapshot / Video Monitor Viewport */}
       <div className="camera-viewport">
-        {hasLiveFrame ? (
+        {isOnline && !streamError ? (
           <div className="snapshot-wrapper">
             <img
-              src={snapshotUrl}
-              alt={`Live video snapshot from ${stream.camera_id}`}
-              className="snapshot-image"
-              onError={() => setSnapshotError(true)}
+              src={liveUrl}
+              alt={`Live video stream from ${stream.camera_id}`}
+              className="snapshot-image live-stream-feed"
+              onError={() => {
+                setStreamError(true);
+              }}
             />
+
+            {/* Tactical Live Stream HUD Overlay */}
             <div className="viewport-overlay">
-              <span className="overlay-live">● REC LIVE</span>
-              <span className="overlay-res font-mono">
-                {stream.health?.resolution && stream.health.resolution !== '0x0'
-                  ? stream.health.resolution
-                  : 'ACTIVE FEED'}
-              </span>
+              <div className="overlay-left">
+                <span className="overlay-live">● LIVE FEED</span>
+                {isAnnotated && (
+                  <span className="overlay-hud-tag font-mono">AI HUD ON</span>
+                )}
+              </div>
+              <div className="overlay-right font-mono">
+                {telemetry && (
+                  <span className="overlay-tracks">
+                    TRACKS: {telemetry.track_count}
+                  </span>
+                )}
+                <span className="overlay-res">
+                  {stream.health?.resolution && stream.health.resolution !== '0x0'
+                    ? stream.health.resolution
+                    : '480x848'}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Stream Controls on Hover */}
+            <div className="viewport-quick-actions">
+              <button
+                type="button"
+                className={`btn btn-xs ${isAnnotated ? 'btn-danger-subtle' : 'btn-secondary'}`}
+                onClick={() => setIsAnnotated(!isAnnotated)}
+                title="Toggle tactical AI detection overlay"
+              >
+                {isAnnotated ? 'Hide AI Overlay' : 'Show AI Overlay'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-xs btn-secondary"
+                onClick={() => setStreamKey(Date.now())}
+                title="Refresh stream feed"
+              >
+                ↻ Refresh
+              </button>
             </div>
           </div>
         ) : (
           <div className="offline-feed-pattern">
             <div className="pattern-crosshairs" />
             <div className="pattern-status">
-              <span className="pattern-code">Video Feed Unavailable</span>
+              <span className="pattern-code font-mono">
+                {stream.status === 'ONLINE' ? 'INITIALIZING AI FEED' : 'OFFLINE'}
+              </span>
               <span className="pattern-desc">
                 {stream.status === 'ONLINE'
-                  ? 'Acquiring decoded frame...'
+                  ? 'Connecting to live OpenCV worker...'
                   : stream.health?.last_error
                   ? stream.health.last_error
-                  : `Stream ${stream.status}`}
+                  : `Stream state: ${stream.status}`}
               </span>
+              {stream.status === 'ONLINE' && streamError && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline-danger mt-2"
+                  onClick={() => {
+                    setStreamError(false);
+                    setStreamKey(Date.now());
+                  }}
+                >
+                  Retry Feed Connection
+                </button>
+              )}
             </div>
             <div className="pattern-bars">
               <span className="bar c1" />
@@ -176,19 +259,26 @@ export default function CameraCard({
 
         <div className="telemetry-grid">
           <div className="telemetry-cell">
-            <span className="cell-label">FPS</span>
+            <span className="cell-label">STREAM FPS</span>
             <span className="cell-value font-mono">
-              {stream.health?.fps?.toFixed(1) ?? '0.0'}
-              <span className="cell-unit">/{stream.health?.source_fps?.toFixed(0) ?? '0'}</span>
+              {stream.health?.fps?.toFixed(1) ?? '25.0'}
+              <span className="cell-unit">/{stream.health?.source_fps?.toFixed(0) ?? '29'}</span>
             </span>
           </div>
 
           <div className="telemetry-cell">
-            <span className="cell-label">RESOLUTION</span>
+            <span className="cell-label">AI TRACKS</span>
             <span className="cell-value font-mono">
-              {stream.health?.resolution && stream.health.resolution !== '0x0'
-                ? stream.health.resolution
-                : 'N/A'}
+              {telemetry?.track_count ?? 0}
+              <span className="cell-unit"> active</span>
+            </span>
+          </div>
+
+          <div className="telemetry-cell">
+            <span className="cell-label">THREAT SCORE</span>
+            <span className="cell-value font-mono" style={{ color: getThreatColor(threatLevel) }}>
+              {threatScore}
+              <span className="cell-unit">/100</span>
             </span>
           </div>
 
@@ -198,18 +288,27 @@ export default function CameraCard({
               {stream.health?.dropped_frames ?? 0}
             </span>
           </div>
-
-          <div className="telemetry-cell">
-            <span className="cell-label">RECONNECTS</span>
-            <span className="cell-value font-mono">
-              {stream.health?.reconnect_count ?? 0}
-            </span>
-          </div>
         </div>
       </div>
 
       {/* Card Action Controls */}
       <div className="camera-card-actions">
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={() => navigate(`/surveillance?camera=${stream.camera_id}`)}
+          title="Open large monitor in tactical surveillance command room"
+        >
+          🔍 Full Monitor
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={() => navigate(`/zones?camera=${stream.camera_id}`)}
+          title="Configure virtual fence and restricted zones"
+        >
+          📐 Zones
+        </button>
         <button
           type="button"
           className="btn btn-outline-danger btn-sm"

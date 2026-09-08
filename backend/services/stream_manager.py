@@ -5,7 +5,7 @@ Coordinates lifecycle, health queries, and operations across multiple camera str
 import logging
 import threading
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -102,6 +102,78 @@ class StreamManager:
         if not worker:
             return None
         return worker.get_latest_frame_jpeg(quality=quality)
+
+    def get_latest_annotated_frame_jpeg(self, camera_id: str, quality: int = 80) -> Optional[bytes]:
+        """Get the latest AI-annotated frame encoded as JPEG bytes."""
+        with self._lock:
+            worker = self._workers.get(camera_id)
+
+        if not worker:
+            return None
+        return worker.get_latest_annotated_frame_jpeg(quality=quality)
+
+    def get_latest_detections(self, camera_id: str) -> Optional[dict[str, Any]]:
+        """Get the latest detections telemetry for a camera."""
+        with self._lock:
+            worker = self._workers.get(camera_id)
+
+        if not worker:
+            return None
+        return worker.get_latest_detections()
+
+    def generate_mjpeg_stream(self, camera_id: str, annotated: bool = True, target_fps: int = 25):
+        """Generate MJPEG video stream chunks for a camera."""
+        with self._lock:
+            worker = self._workers.get(camera_id)
+
+        if not worker:
+            return None
+        return worker.generate_mjpeg_stream(annotated=annotated, target_fps=target_fps)
+
+    def update_camera_zones(
+        self,
+        camera_id: str,
+        fence: tuple[tuple[int, int], tuple[int, int]] | None = None,
+        restricted_zone: list[tuple[int, int]] | None = None,
+    ) -> bool:
+        """Dynamically update virtual fence and restricted zone for a camera."""
+        with self._lock:
+            worker = self._workers.get(camera_id)
+
+        if not worker:
+            return False
+
+        worker.update_zones(fence=fence, restricted_zone=restricted_zone)
+        return True
+
+    def get_camera_zones(self, camera_id: str) -> Optional[dict[str, Any]]:
+        """Get configured zones for a camera."""
+        with self._lock:
+            worker = self._workers.get(camera_id)
+
+        if not worker:
+            return None
+
+        engine = worker._get_analytics_engine()
+        return {
+            "camera_id": camera_id,
+            "fence": engine.fence,
+            "restricted_zone": engine.restricted_zone,
+            "expected_direction": engine.expected_direction,
+            "loitering_seconds": engine.loitering_seconds,
+        }
+
+    def get_all_camera_zones(self) -> list[dict[str, Any]]:
+        """List zones for all registered cameras."""
+        with self._lock:
+            camera_ids = list(self._workers.keys())
+
+        result = []
+        for cid in camera_ids:
+            zones = self.get_camera_zones(cid)
+            if zones:
+                result.append(zones)
+        return result
 
     def get_total_count(self) -> int:
         """Total number of registered camera streams."""

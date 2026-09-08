@@ -8,12 +8,17 @@ from ultralytics import YOLO
 from backend.models.detection import BoundingBox, DetectionResult
 
 
+import os
+
+DEFAULT_YOLO_MODEL = "yolov8n.pt" if os.path.exists("yolov8n.pt") else "yolo11n.pt"
+
+
 class ObjectTracker:
     """YOLO ByteTrack-based object tracker."""
 
     def __init__(
         self,
-        model_path: str = "yolo11n.pt",
+        model_path: str = DEFAULT_YOLO_MODEL,
         confidence_threshold: float = 0.25,
     ) -> None:
         self.model = YOLO(model_path)

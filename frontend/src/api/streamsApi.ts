@@ -73,15 +73,47 @@ export const streamsApi = {
     ),
 
   /**
-   * GET /streams/:id/snapshot — returns JPEG image as a Blob URL
-   * Note: Only works when OpenCV is installed and a frame has been decoded.
+   * GET /streams/:id/detections — real-time structured detection telemetry
    */
-  getSnapshotUrl: (cameraId: string) =>
-    fetchBlob(`/streams/${encodeURIComponent(cameraId)}/snapshot`),
+  getDetections: (cameraId: string) =>
+    apiClient.get<any>(`/streams/${encodeURIComponent(cameraId)}/detections`),
 
-  /** Returns a direct URL string for use in <img> src (no auth needed, CORS open) */
-  getSnapshotSrc: (cameraId: string) => {
+  /**
+   * GET /streams/:id/snapshot — returns JPEG image as a Blob URL
+   * Supports ?annotated=true for AI overlays
+   */
+  getSnapshotUrl: (cameraId: string, annotated: boolean = true) =>
+    fetchBlob(`/streams/${encodeURIComponent(cameraId)}/snapshot?annotated=${annotated}`),
+
+  /** Returns a direct URL string for use in <img> src */
+  getSnapshotSrc: (cameraId: string, annotated: boolean = true) => {
     const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    return `${base}/streams/${encodeURIComponent(cameraId)}/snapshot`;
+    return `${base}/streams/${encodeURIComponent(cameraId)}/snapshot?annotated=${annotated}`;
+  },
+
+  /** Returns a direct MJPEG video stream URL */
+  getLiveStreamUrl: (cameraId: string, annotated: boolean = true) => {
+    const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    return `${base}/streams/${encodeURIComponent(cameraId)}/live?annotated=${annotated}`;
+  },
+
+  /** Upload a local video file to backend samples/ */
+  uploadVideo: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    try {
+      const res = await fetch(`${base}/streams/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        return { ok: false as const, error: `Upload failed (HTTP ${res.status})` };
+      }
+      const data = await res.json();
+      return { ok: true as const, data };
+    } catch (e: unknown) {
+      return { ok: false as const, error: e instanceof Error ? e.message : 'Upload failed' };
+    }
   },
 };

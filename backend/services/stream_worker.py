@@ -125,6 +125,14 @@ class StreamWorker:
         # Shared state
         self._lock = threading.RLock()
         self._latest_frame: Optional[np.ndarray] = None
+        self._latest_annotated_frame: Optional[np.ndarray] = None
+        self._latest_detections: list[dict[str, Any]] = []
+        self._latest_faces: list[dict[str, Any]] = []
+        self._latest_plates: list[dict[str, Any]] = []
+        self._latest_events: list[dict[str, Any]] = []
+        self._threat_score: int = 0
+        self._threat_level: str = "NORMAL"
+        self._capabilities: dict[str, Any] = {}
         self._frame_buffer: Deque[np.ndarray] = deque(
             maxlen=self.max_buffer_size
         )
@@ -145,6 +153,10 @@ class StreamWorker:
         # Event cooldown state:
         # {(event_type, camera_id): last_persist_time}
         self._event_last_seen: dict[tuple[str, str], float] = {}
+
+        self._cumulative_persons: int = 0
+        self._cumulative_vehicles: int = 0
+        self._seen_track_ids: set[int] = set()
 
         # Evidence directory
         self._evidence_dir = Path("evidence")
@@ -276,6 +288,97 @@ class StreamWorker:
 
         return None
 
+    def get_latest_annotated_frame(self) -> Optional[np.ndarray]:
+        """Return a copy of the latest annotated frame with AI overlays, falling back to raw frame."""
+        with self._lock:
+            if self._latest_annotated_frame is not None:
+                return self._latest_annotated_frame.copy()
+            if self._latest_frame is not None:
+                return self._latest_frame.copy()
+            return None
+
+    def get_latest_annotated_frame_jpeg(
+        self,
+        quality: int = 80,
+    ) -> Optional[bytes]:
+        """Encode the latest AI-annotated frame as JPEG."""
+        if cv2 is None:
+            return None
+
+        frame = self.get_latest_annotated_frame()
+        if frame is None:
+            return None
+
+        quality = max(1, min(100, int(quality)))
+        success, encoded = cv2.imencode(
+            ".jpg",
+            frame,
+            [
+                int(cv2.IMWRITE_JPEG_QUALITY),
+                quality,
+            ],
+        )
+
+        if success:
+            return encoded.tobytes()
+
+        return None
+
+    def get_latest_detections(self) -> dict[str, Any]:
+        """Return real-time structured detection telemetry, track counts, and threat status."""
+        with self._lock:
+            return {
+                "camera_id": self.camera_id,
+                "timestamp": self._last_frame_time,
+                "fps": round(self._calculated_fps, 1),
+                "source_fps": round(self._source_fps, 1),
+                "resolution": f"{self._width}x{self._height}",
+                "status": self.status.value,
+                "detections": list(self._latest_detections),
+                "tracks": list(self._latest_detections),
+                "track_count": len(self._latest_detections),
+                "faces": list(self._latest_faces),
+                "plates": list(self._latest_plates),
+                "events": list(self._latest_events),
+                "threat_score": self._threat_score,
+                "threat_level": self._threat_level,
+                "capabilities": dict(self._capabilities),
+                "cumulative_persons": self._cumulative_persons,
+                "cumulative_vehicles": self._cumulative_vehicles,
+                "counts": {
+                    "total": len(self._latest_detections),
+                    "persons": sum(1 for d in self._latest_detections if d.get("class") == "person"),
+                    "vehicles": sum(1 for d in self._latest_detections if d.get("class") in {"car", "truck", "bus", "motorcycle"}),
+                    "faces": len(self._latest_faces),
+                    "plates": len(self._latest_plates),
+                },
+            }
+
+    def generate_mjpeg_stream(self, annotated: bool = True, target_fps: int = 25):
+        """Yield multipart MJPEG stream frames for live browser rendering."""
+        frame_delay = 1.0 / max(1, min(60, target_fps))
+        while not self._stop_event.is_set():
+            jpeg = (
+                self.get_latest_annotated_frame_jpeg(quality=80)
+                if annotated
+                else self.get_latest_frame_jpeg(quality=80)
+            )
+            if jpeg:
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n\r\n" + jpeg + b"\r\n"
+                )
+            self._stop_event.wait(frame_delay)
+
+    def update_zones(
+        self,
+        fence: tuple[tuple[int, int], tuple[int, int]] | None = None,
+        restricted_zone: list[tuple[int, int]] | None = None,
+    ) -> None:
+        """Dynamically update virtual fence and restricted zone geometry."""
+        engine = self._get_analytics_engine()
+        engine.update_zones(fence=fence, restricted_zone=restricted_zone)
+
     # ------------------------------------------------------------------
     # Health
     # ------------------------------------------------------------------
@@ -353,6 +456,28 @@ class StreamWorker:
             and str(source).isdigit()
         ):
             source = int(source)
+        elif self.source_type == StreamSourceType.FILE:
+            clean = str(source).strip().strip('"').strip("'")
+            candidates = [
+                clean,
+                Path(clean),
+                Path("samples") / clean,
+                Path("samples") / Path(clean).name,
+                Path(__file__).resolve().parent.parent.parent / "samples" / Path(clean).name,
+            ]
+            for cand in candidates:
+                cand_p = Path(cand)
+                if cand_p.is_file():
+                    source = str(cand_p.resolve())
+                    break
+            else:
+                self._last_error = f"Video file not found: {self.source_url}"
+                logger.warning(
+                    "Video file not found for %s: %s",
+                    self.camera_id,
+                    self.source_url,
+                )
+                return None
 
         logger.info(
             "Opening video source [%s] for %s",
@@ -774,7 +899,7 @@ class StreamWorker:
         frame: np.ndarray,
         timestamp: Optional[float],
     ) -> None:
-        """Run analytics and persist resulting events."""
+        """Run analytics, update live detections, render tactical overlays, and persist resulting events."""
 
         engine = self._get_analytics_engine()
         if engine is None:
@@ -788,16 +913,41 @@ class StreamWorker:
         if not isinstance(result, dict):
             return
 
+        # Always update live detections and generate annotated frame
+        annotated_frame = self._render_tactical_hud(frame, result)
+
+        detections = result.get("detections", [])
+        for d in detections:
+            track_id = d.get("track_id")
+            cls = d.get("class", "")
+            if track_id is not None:
+                if track_id not in self._seen_track_ids:
+                    self._seen_track_ids.add(track_id)
+                    if cls == "person":
+                        self._cumulative_persons += 1
+                    elif cls in {"car", "truck", "bus", "motorcycle", "vehicle"}:
+                        self._cumulative_vehicles += 1
+            else:
+                if cls == "person":
+                    self._cumulative_persons += 1
+                elif cls in {"car", "truck", "bus", "motorcycle", "vehicle"}:
+                    self._cumulative_vehicles += 1
+
+        with self._lock:
+            self._latest_detections = result.get("detections", [])
+            self._latest_faces = result.get("faces", [])
+            self._latest_plates = result.get("plates", [])
+            self._latest_events = result.get("events", [])
+            self._threat_score = result.get("threat_score", 0)
+            self._threat_level = result.get("threat_level", "NORMAL")
+            self._capabilities = result.get("capabilities", {})
+            self._latest_annotated_frame = annotated_frame
+
         events = result.get("events", [])
-
-        if not events:
-            return
-
-        if not isinstance(events, list):
+        if not events or not isinstance(events, list):
             return
 
         persistable_events = []
-
         now = time.time()
 
         for event in events:
@@ -852,6 +1002,183 @@ class StreamWorker:
             self.camera_id,
             len(persisted),
         )
+
+    def _render_tactical_hud(
+        self,
+        frame: np.ndarray,
+        result: dict[str, Any],
+    ) -> np.ndarray:
+        """Render high-contrast, professional tactical surveillance HUD overlay on frame."""
+        if cv2 is None or frame is None or frame.size == 0:
+            return frame
+
+        h, w = frame.shape[:2]
+        annotated = frame.copy()
+
+        # 1. Restricted Zone polygon
+        zone = result.get("restricted_zone")
+        if zone and len(zone) >= 3:
+            pts = np.array(zone, np.int32).reshape((-1, 1, 2))
+            overlay = annotated.copy()
+            cv2.fillPoly(overlay, [pts], (20, 20, 160))
+            cv2.addWeighted(overlay, 0.22, annotated, 0.78, 0, annotated)
+            cv2.polylines(annotated, [pts], True, (40, 40, 220), 2, cv2.LINE_AA)
+            first_pt = zone[0]
+            cv2.putText(
+                annotated,
+                "RESTRICTED ZONE",
+                (first_pt[0] + 5, first_pt[1] + 18),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.45,
+                (40, 40, 220),
+                2,
+                cv2.LINE_AA,
+            )
+
+        # 2. Virtual Fence Line
+        fence = result.get("fence")
+        if fence and len(fence) == 2:
+            p1, p2 = fence
+            cv2.line(annotated, p1, p2, (255, 210, 0), 2, cv2.LINE_AA)
+            mid_x = (p1[0] + p2[0]) // 2
+            mid_y = (p1[1] + p2[1]) // 2
+            cv2.putText(
+                annotated,
+                "VIRTUAL FENCE",
+                (mid_x + 6, mid_y - 6),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.45,
+                (255, 210, 0),
+                2,
+                cv2.LINE_AA,
+            )
+
+        # 3. Object Bounding Boxes & Reticles
+        detections = result.get("detections", [])
+        events = result.get("events", [])
+        alert_track_ids = {
+            e.get("track_id")
+            for e in events
+            if e.get("track_id") is not None and e.get("event_type") in {
+                "virtual_fence", "virtual_fence_crossing",
+                "restricted_zone", "restricted_zone_entry",
+                "suspicious_activity", "wrong_direction",
+            }
+        }
+
+        for det in detections:
+            bbox = det.get("bbox", {})
+            x1 = int(bbox.get("x1", 0))
+            y1 = int(bbox.get("y1", 0))
+            x2 = int(bbox.get("x2", 0))
+            y2 = int(bbox.get("y2", 0))
+
+            cls_name = str(det.get("class", "object")).upper()
+            conf = float(det.get("confidence", 0.0))
+            tid = det.get("track_id")
+
+            is_threat = tid in alert_track_ids
+            box_color = (35, 40, 225) if is_threat else (45, 215, 85)
+
+            # Draw tactical box
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), box_color, 2)
+
+            # Tactical corner brackets
+            corner_len = min(12, max(4, (x2 - x1) // 5))
+            # Corners
+            cv2.line(annotated, (x1, y1), (x1 + corner_len, y1), (255, 255, 255), 2)
+            cv2.line(annotated, (x1, y1), (x1, y1 + corner_len), (255, 255, 255), 2)
+            cv2.line(annotated, (x2, y1), (x2 - corner_len, y1), (255, 255, 255), 2)
+            cv2.line(annotated, (x2, y1), (x2, y1 + corner_len), (255, 255, 255), 2)
+            cv2.line(annotated, (x1, y2), (x1 + corner_len, y2), (255, 255, 255), 2)
+            cv2.line(annotated, (x1, y2), (x1, y2 - corner_len), (255, 255, 255), 2)
+            cv2.line(annotated, (x2, y2), (x2 - corner_len, y2), (255, 255, 255), 2)
+            cv2.line(annotated, (x2, y2), (x2, y2 - corner_len), (255, 255, 255), 2)
+
+            # Label badge
+            id_str = f" #{tid}" if tid is not None else ""
+            label_text = f"{cls_name}{id_str} [{conf:.2f}]"
+            if is_threat:
+                label_text += " [ALERT]"
+
+            (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.42, 1)
+            bg_y1 = max(0, y1 - th - 6)
+            cv2.rectangle(annotated, (x1, bg_y1), (x1 + tw + 6, y1), box_color, cv2.FILLED)
+            cv2.putText(
+                annotated,
+                label_text,
+                (x1 + 3, y1 - 3),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.42,
+                (255, 255, 255),
+                1,
+                cv2.LINE_AA,
+            )
+
+        # 4. Face Detections (if any)
+        faces = result.get("faces", [])
+        for f in faces:
+            fb = f.get("bbox", {})
+            fx1, fy1 = int(fb.get("x1", 0)), int(fb.get("y1", 0))
+            fx2, fy2 = int(fb.get("x2", 0)), int(fb.get("y2", 0))
+            cv2.rectangle(annotated, (fx1, fy1), (fx2, fy2), (240, 180, 40), 2)
+            cv2.putText(
+                annotated,
+                "Face Detected",
+                (fx1, max(15, fy1 - 5)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.42,
+                (240, 180, 40),
+                1,
+                cv2.LINE_AA,
+            )
+
+        # 5. ANPR Plates (if any)
+        plates = result.get("plates", [])
+        for p in plates:
+            pb = p.get("bbox", {})
+            px1, py1 = int(pb.get("x1", 0)), int(pb.get("y1", 0))
+            p_text = f"PLATE: {p.get('text', '')}"
+            cv2.putText(
+                annotated,
+                p_text,
+                (px1, max(18, py1 + 18)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.50,
+                (0, 230, 255),
+                2,
+                cv2.LINE_AA,
+            )
+
+        # 6. Top C2 HUD Overlay Bar
+        hud_h = 26
+        hud_overlay = annotated.copy()
+        cv2.rectangle(hud_overlay, (0, 0), (w, hud_h), (14, 16, 18), cv2.FILLED)
+        cv2.addWeighted(hud_overlay, 0.75, annotated, 0.25, 0, annotated)
+
+        fps_val = self._calculated_fps if self._calculated_fps > 0 else self._source_fps
+        threat_level = result.get("threat_level", "NORMAL")
+        det_count = len(detections)
+
+        hud_text = (
+            f"IBVAP C2 // {self.camera_id} | "
+            f"{self.sector or 'SECTOR 01'} | "
+            f"FPS: {fps_val:.1f} | "
+            f"OBJECTS: {det_count} | "
+            f"THREAT: {threat_level}"
+        )
+        cv2.putText(
+            annotated,
+            hud_text,
+            (8, 18),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.42,
+            (225, 230, 235),
+            1,
+            cv2.LINE_AA,
+        )
+
+        return annotated
 
     @staticmethod
     def _normalize_event_type(

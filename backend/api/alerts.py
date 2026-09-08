@@ -41,6 +41,12 @@ async def get_all_alerts(
     summary="Resolve an alert",
     description="Marks an active perimeter threat alert as RESOLVED.",
 )
+@router.post(
+    "/{alert_id}/resolve",
+    response_model=Alert,
+    summary="Resolve an alert (POST)",
+    description="Marks an active perimeter threat alert as RESOLVED.",
+)
 async def resolve_alert(alert_id: int) -> Alert:
     alert = alert_service.resolve_alert(alert_id)
 

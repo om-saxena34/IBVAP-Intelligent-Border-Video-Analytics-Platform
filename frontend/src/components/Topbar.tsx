@@ -31,32 +31,26 @@ export default function Topbar({
   }, []);
 
   const isOnline = Boolean(health && !error && health.status === 'healthy');
+  const onlineCameras = health?.online_cameras ?? 0;
+  const totalCameras = health?.total_cameras ?? 0;
 
   return (
     <header className="app-topbar">
       <div className="topbar-left">
         <div className="topbar-title-group">
-          <h2 className="topbar-title">Intelligent Border Surveillance</h2>
+          <div className="topbar-headline-row">
+            <span className="topbar-callsign font-mono">IBVAP</span>
+            <span className="topbar-divider">|</span>
+            <h2 className="topbar-title">Intelligent Border Video Analytics Platform</h2>
+          </div>
           <p className="topbar-subtitle">
-            Real-time monitoring &amp; AI-powered video analytics
+            Autonomous Border Surveillance &amp; AI-Powered Threat Interdiction • SIH 2026
           </p>
         </div>
       </div>
 
       <div className="topbar-right">
-        {/* Live Broadcast Beacon */}
-        <div className="topbar-live-beacon">
-          <span className="live-dot" />
-          <span className="live-text">LIVE SURVEILLANCE</span>
-        </div>
-
-        {/* System Time UTC */}
-        <div className="topbar-clock" title="System Synchronization Time">
-          <span className="clock-icon">🕒</span>
-          <span className="clock-val">{timeString || 'SYNCHRONIZING...'}</span>
-        </div>
-
-        {/* Backend Status Pill */}
+        {/* System Status */}
         <div
           className={`topbar-status-pill ${
             isOnline ? 'pill-online' : 'pill-offline'
@@ -65,7 +59,7 @@ export default function Topbar({
         >
           <span className="pill-dot" />
           <span className="pill-label">
-            {loading ? 'CHECKING...' : isOnline ? 'BACKEND 8000 OK' : 'BACKEND OFFLINE'}
+            {loading ? 'CHECKING...' : isOnline ? 'SYSTEM OPERATIONAL' : 'SYSTEM OFFLINE'}
           </span>
           {onRefresh && (
             <button
@@ -79,25 +73,38 @@ export default function Topbar({
           )}
         </div>
 
+        {/* Active Cameras Count */}
+        <div className="topbar-cameras-metric" title="Active Online Surveillance Channels">
+          <span className="cameras-metric-icon">📹</span>
+          <span className="cameras-metric-label">ACTIVE NODES:</span>
+          <span className="cameras-metric-val font-mono">
+            {onlineCameras}
+            <span className="cameras-metric-total">/{totalCameras}</span>
+          </span>
+        </div>
+
+        {/* Live Surveillance Beacon */}
+        <div className="topbar-live-beacon">
+          <span className="live-dot" />
+          <span className="live-text">DEFENSE C2 ACTIVE</span>
+        </div>
+
+        {/* System Time */}
+        <div className="topbar-clock" title="System Surveillance Time">
+          <span className="clock-icon">🕒</span>
+          <span className="clock-val font-mono">{timeString || 'SYNCHRONIZING...'}</span>
+        </div>
+
         {/* Connect Camera Quick Button */}
         {onOpenConnectModal && (
           <button
             type="button"
-            className="btn btn-sm btn-accent-cyan"
+            className="btn btn-sm btn-primary btn-tactical"
             onClick={onOpenConnectModal}
           >
             + Connect Camera
           </button>
         )}
-
-        {/* User / Operator Badge */}
-        <div className="topbar-operator">
-          <div className="operator-avatar">OP</div>
-          <div className="operator-meta">
-            <span className="operator-name">UNIT-COMMAND</span>
-            <span className="operator-role">SECTOR 04</span>
-          </div>
-        </div>
       </div>
     </header>
   );

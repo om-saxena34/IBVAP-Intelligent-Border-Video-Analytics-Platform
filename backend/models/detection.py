@@ -30,6 +30,7 @@ class DetectionResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "class": self.class_name,
+            "class_name": self.class_name,
             "confidence": self.confidence,
             "bbox": self.bbox.to_dict(),
             "track_id": self.track_id,

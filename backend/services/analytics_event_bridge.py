@@ -10,11 +10,16 @@ from backend.services.event_service import event_service
 # Analytics event → platform event mapping.
 EVENT_SEVERITY: dict[str, Severity] = {
     "virtual_fence": Severity.HIGH,
+    "virtual_fence_crossing": Severity.HIGH,
     "restricted_zone": Severity.CRITICAL,
+    "restricted_zone_entry": Severity.CRITICAL,
+    "suspicious_activity": Severity.CRITICAL,
     "loitering": Severity.MEDIUM,
     "night_movement": Severity.HIGH,
     "wrong_direction": Severity.HIGH,
     "group_movement": Severity.MEDIUM,
+    "face_detected": Severity.LOW,
+    "plate_detected": Severity.LOW,
 }
 
 

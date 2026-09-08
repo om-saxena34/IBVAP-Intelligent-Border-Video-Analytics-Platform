@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAlerts } from '../hooks/useAlerts';
 
@@ -9,6 +9,7 @@ interface AlertPanelProps {
 export default function AlertPanel({ onResolveSuccess }: AlertPanelProps) {
   const { alerts, activeAlerts, activeCount, loading, error, refresh, resolveAlert } =
     useAlerts(4000);
+  const [resolvingId, setResolvingId] = useState<number | null>(null);
 
   const criticalCount = useMemo(
     () => activeAlerts.filter((a) => a.severity === 'CRITICAL').length,
@@ -46,18 +47,23 @@ export default function AlertPanel({ onResolveSuccess }: AlertPanelProps) {
   };
 
   const handleResolve = async (id: number) => {
-    const res = await resolveAlert(id);
-    if (res.ok) {
-      onResolveSuccess?.(id);
+    setResolvingId(id);
+    try {
+      const res = await resolveAlert(id);
+      if (res.ok) {
+        onResolveSuccess?.(id);
+      }
+    } finally {
+      setResolvingId(null);
     }
   };
 
   return (
-    <div className="alert-panel-card">
+    <div className="alert-panel-card border-tactical">
       <div className="panel-header">
         <div className="panel-title-group">
-          <span className="panel-tag">INTELLIGENCE FEED</span>
-          <h3 className="panel-title">Recent Border Alerts</h3>
+          <span className="panel-tag font-mono">IBVAP // LIVE INTELLIGENCE</span>
+          <h3 className="panel-title">Active Threat Incidents</h3>
         </div>
 
         <div className="panel-badge-group">
@@ -72,8 +78,8 @@ export default function AlertPanel({ onResolveSuccess }: AlertPanelProps) {
               {activeCount > 0 ? 'Threats Detected' : 'Perimeter Secure'}
             </span>
           )}
-          <span className="count-pill">
-            ACTIVE ALERTS: {loading && alerts.length === 0 ? '...' : activeCount}
+          <span className="count-pill font-mono">
+            {loading && alerts.length === 0 ? '...' : `${activeCount} ACTIVE`}
           </span>
         </div>
       </div>
@@ -101,9 +107,9 @@ export default function AlertPanel({ onResolveSuccess }: AlertPanelProps) {
         ) : activeAlerts.length === 0 ? (
           <div className="alert-empty-state">
             <div className="alert-empty-icon">🛡</div>
-            <h4 className="alert-empty-title">No Active Threat Alerts</h4>
+            <h4 className="alert-empty-title">Perimeter Secure</h4>
             <p className="alert-empty-text">
-              Perimeter sensors are nominal. High/Critical virtual fence breaches or suspicious activity will trigger live alerts here.
+              No active border breaches, zone violations, or unauthorized targets detected.
             </p>
             <div className="alert-api-notice" style={{ marginTop: '0.75rem' }}>
               <span className="notice-icon">✓</span>
@@ -118,47 +124,67 @@ export default function AlertPanel({ onResolveSuccess }: AlertPanelProps) {
         ) : (
           <>
             <div className="alert-summary" style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', fontSize: '0.8rem' }}>
-              <span className="badge badge-critical">{criticalCount} CRITICAL</span>
-              <span className="badge badge-high">{highCount} HIGH</span>
-              <span className="count-pill">{activeCount} TOTAL ACTIVE</span>
+              <span className="badge badge-critical font-mono font-bold">{criticalCount} CRITICAL</span>
+              <span className="badge badge-high font-mono font-bold">{highCount} HIGH</span>
+              <span className="count-pill font-mono">{activeCount} TOTAL ACTIVE</span>
             </div>
 
-            <div className="alerts-feed-list">
-              {activeAlerts.slice(0, 6).map((alert) => (
-                <div key={alert.id} className={`alert-feed-item severity-${alert.severity.toLowerCase()}`}>
-                  <div className="alert-feed-left">
-                    <span className={`severity-tag ${getSeverityBadgeClass(alert.severity)}`}>
-                      {alert.severity}
-                    </span>
-                    <div className="alert-feed-meta">
-                      <h4 className="alert-feed-type">
-                        {alert.event_type.replace(/_/g, ' ')}
-                      </h4>
-                      <div className="alert-feed-sub">
-                        <span className="alert-cam-id font-mono">🎥 {alert.camera_id}</span>
-                        <span className="alert-time font-mono">🕒 {formatTime(alert.timestamp)}</span>
-                        {alert.confidence && (
-                          <span className="alert-confidence font-mono">
-                            ⚡ {(alert.confidence * 100).toFixed(0)}% CONF
+            <div className="alerts-feed-list alert-list">
+              {activeAlerts.slice(0, 7).map((alert) => {
+                const isResolving = resolvingId === alert.id;
+                const eventLabel = alert.event_type.replace(/_/g, ' ').toUpperCase();
+                const confidencePct = alert.confidence != null ? `${Math.round(alert.confidence * 100)}%` : null;
+
+                return (
+                  <div
+                    key={alert.id}
+                    className={`alert-feed-item alert-item severity-${alert.severity.toLowerCase()} alert-border-${alert.severity.toLowerCase()}`}
+                  >
+                    <div className="alert-feed-left alert-item-main">
+                      <div className="alert-item-header">
+                        <span className={`severity-tag severity-badge ${getSeverityBadgeClass(alert.severity)} font-mono`}>
+                          {alert.severity}
+                        </span>
+                        <span className="alert-feed-type alert-event-name font-mono">
+                          {eventLabel}
+                        </span>
+                      </div>
+
+                      <div className="alert-feed-sub alert-item-meta font-mono">
+                        <span className="alert-cam-id">🎥 {alert.camera_id}</span>
+                        <span className="alert-time">🕒 {formatTime(alert.timestamp)}</span>
+                        {confidencePct && (
+                          <span className="alert-confidence">
+                            ⚡ {confidencePct} CONF
                           </span>
                         )}
                       </div>
+
+                      {alert.details && (
+                        <div className="alert-item-details">
+                          {typeof alert.details === 'string'
+                            ? alert.details
+                            : JSON.stringify(alert.details)}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="alert-feed-actions alert-item-actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm font-mono"
+                        onClick={() => handleResolve(alert.id)}
+                        disabled={isResolving}
+                        title="Mark alert as resolved"
+                      >
+                        {isResolving ? '...' : 'Resolve'}
+                      </button>
                     </div>
                   </div>
-                  <div className="alert-feed-actions">
-                    <button
-                      type="button"
-                      className="btn btn-outline-danger btn-sm font-mono"
-                      onClick={() => handleResolve(alert.id)}
-                      title="Mark alert as resolved"
-                    >
-                      Resolve
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {activeAlerts.length > 6 && (
-                <div className="alerts-feed-footer">
+                );
+              })}
+              {activeAlerts.length > 7 && (
+                <div className="alerts-feed-footer font-mono">
                   <NavLink to="/alerts" className="view-all-link">
                     View all {activeAlerts.length} active alerts →
                   </NavLink>

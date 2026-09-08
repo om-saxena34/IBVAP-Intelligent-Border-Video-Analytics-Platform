@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useHealth } from '../hooks/useHealth';
 import { useStreams } from '../hooks/useStreams';
-import { useAlerts } from '../hooks/useAlerts';
-import { useEvents } from '../hooks/useEvents';
+import { alertsApi, eventsApi, apiClient } from '../api/client';
+import type { Alert, Event } from '../api/client';
 
 import StatCard from '../components/StatCard';
 import CameraGrid from '../components/CameraGrid';
@@ -14,6 +14,21 @@ import VirtualFenceModal from '../components/VirtualFenceModal';
 interface DashboardPageProps {
   onOpenConnectModal: () => void;
   onNotify: (msg: string, type: 'success' | 'error') => void;
+}
+
+interface AnalyticsSummaryData {
+  total_events: number;
+  events_today: number;
+  active_alerts: number;
+  critical_events: number;
+  high_events: number;
+  medium_events: number;
+  low_events: number;
+  total_detections: number;
+  cameras_analyzed: number;
+  cameras_online: number;
+  persons_detected: number;
+  vehicles_detected: number;
 }
 
 export default function DashboardPage({
@@ -36,77 +51,91 @@ export default function DashboardPage({
     loading: streamsLoading,
     error: streamsError,
     refresh: refreshStreams,
-  } = useStreams(5000);
+  } = useStreams(4000);
 
-  const {
-    alerts,
-    activeAlerts,
-    activeCount: activeAlertsCount,
-    loading: alertsLoading,
-    error: alertsError,
-    refresh: refreshAlerts,
-  } = useAlerts(4000);
+  const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
+  const [todayEvents, setTodayEvents] = useState<Event[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [analyticsSummary, setAnalyticsSummary] = useState<AnalyticsSummaryData | null>(null);
 
-  const {
-    events,
-    loading: eventsLoading,
-    error: eventsError,
-    refresh: refreshEvents,
-  } = useEvents(4000);
+  const [telemetryLoading, setTelemetryLoading] = useState(true);
+  const [telemetryError, setTelemetryError] = useState<string | null>(null);
 
-  const criticalAlerts = useMemo(
-    () => activeAlerts.filter((alert) => alert.severity === 'CRITICAL').length,
-    [activeAlerts]
-  );
+  /* ------------------------------------------------------------------------ */
+  /* Load dashboard telemetry & summary                                       */
+  /* ------------------------------------------------------------------------ */
 
-  const highAlerts = useMemo(
-    () => activeAlerts.filter((alert) => alert.severity === 'HIGH').length,
-    [activeAlerts]
-  );
+  const refreshTelemetry = useCallback(async () => {
+    try {
+      const [alertsResponse, eventsResponse, summaryResponse] = await Promise.all([
+        alertsApi.active(),
+        eventsApi.today(),
+        apiClient.get<{ summary: AnalyticsSummaryData }>('/analytics/summary'),
+      ]);
 
-  const todayEvents = useMemo(() => {
-    const now = new Date();
-    return events.filter((event) => {
-      const timestamp = new Date(event.timestamp);
-      return (
-        timestamp.getDate() === now.getDate() &&
-        timestamp.getMonth() === now.getMonth() &&
-        timestamp.getFullYear() === now.getFullYear()
-      );
-    });
-  }, [events]);
+      if (alertsResponse.ok) {
+        setActiveAlerts(alertsResponse.data);
+      }
+
+      if (eventsResponse.ok) {
+        setTodayEvents(eventsResponse.data);
+      }
+
+      // Also get all events for the recent events table
+      const listRes = await eventsApi.list();
+      if (listRes.ok) {
+        setAllEvents(listRes.data.events);
+      }
+
+      if (summaryResponse.ok && summaryResponse.data?.summary) {
+        setAnalyticsSummary(summaryResponse.data.summary);
+      }
+
+      setTelemetryError(null);
+    } catch {
+      setTelemetryError('Unable to load alert/event telemetry.');
+    } finally {
+      setTelemetryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshTelemetry();
+    const interval = window.setInterval(() => {
+      void refreshTelemetry();
+    }, 4000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [refreshTelemetry]);
+
+  /* ------------------------------------------------------------------------ */
+  /* Camera callbacks                                                         */
+  /* ------------------------------------------------------------------------ */
 
   const handleCameraDisconnected = useCallback(
     (cameraId: string) => {
-      onNotify(
-        `Camera stream "${cameraId}" disconnected.`,
-        'success',
-      );
-
+      onNotify(`Camera stream "${cameraId}" disconnected.`, 'success');
       refreshStreams();
       refreshHealth();
     },
-    [
-      onNotify,
-      refreshStreams,
-      refreshHealth,
-    ],
+    [onNotify, refreshStreams, refreshHealth]
   );
 
   const handleCameraError = useCallback(
     (err: string) => {
       onNotify(err, 'error');
     },
-    [onNotify],
+    [onNotify]
   );
 
   const handleFenceEventTriggered = useCallback(
     (eventType: string, camId: string) => {
       onNotify(`Border Intelligence: ${eventType.replace(/_/g, ' ')} detected on ${camId}`, 'success');
-      refreshAlerts();
-      refreshEvents();
+      void refreshTelemetry();
     },
-    [onNotify, refreshAlerts, refreshEvents]
+    [onNotify, refreshTelemetry]
   );
 
   /* ------------------------------------------------------------------------ */
@@ -114,65 +143,51 @@ export default function DashboardPage({
   /* ------------------------------------------------------------------------ */
 
   const totalCameras = streams.length;
-
-  const onlineCameras = streams.filter(
-    (stream) =>
-      stream.status === 'ONLINE',
-  ).length;
-
-  const offlineCameras = streams.filter(
-    (stream) =>
-      stream.status === 'OFFLINE',
-  ).length;
-
-  const reconnectingCameras = streams.filter(
-    (stream) =>
-      stream.status === 'RECONNECTING',
-  ).length;
-
-  const errorCameras = streams.filter(
-    (stream) =>
-      stream.status === 'ERROR',
-  ).length;
+  const onlineCameras = streams.filter((s) => s.status === 'ONLINE').length;
+  const offlineCameras = streams.filter((s) => s.status === 'OFFLINE').length;
+  const reconnectingCameras = streams.filter((s) => s.status === 'RECONNECTING').length;
+  const errorCameras = streams.filter((s) => s.status === 'ERROR').length;
 
   const onlineSubtitle =
     totalCameras === 0
       ? 'No active streams'
       : onlineCameras === totalCameras
-        ? 'All streams operational'
-        : `${totalCameras - onlineCameras} not streaming (${offlineCameras} offline${
-            reconnectingCameras > 0
-              ? `, ${reconnectingCameras} reconnecting`
-              : ''
-          }${
-            errorCameras > 0
-              ? `, ${errorCameras} error`
-              : ''
-          })`;
+      ? 'All feeds active'
+      : `${totalCameras - onlineCameras} not streaming (${offlineCameras} offline${
+          reconnectingCameras > 0 ? `, ${reconnectingCameras} reconnecting` : ''
+        }${errorCameras > 0 ? `, ${errorCameras} error` : ''})`;
 
-  const telemetryError = alertsError || eventsError;
+  // Person and vehicle counts from backend summary or fallback
+  const personsDetected = analyticsSummary?.persons_detected ?? 0;
+  const vehiclesDetected = analyticsSummary?.vehicles_detected ?? 0;
+
+  const criticalAlerts = activeAlerts.filter((a) => a.severity === 'CRITICAL').length;
+  const highAlerts = activeAlerts.filter((a) => a.severity === 'HIGH').length;
+
+  const formatEventTime = (timestamp: string) => {
+    const d = new Date(timestamp);
+    return Number.isNaN(d.getTime()) ? timestamp : d.toLocaleTimeString();
+  };
+
+  const formatEventDate = (timestamp: string) => {
+    const d = new Date(timestamp);
+    return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+  };
 
   return (
     <div className="page-container">
       {/* ------------------------------------------------------------------ */}
-      {/* Dashboard Statistics                                               */}
+      {/* Top 6 Summary Statistics Cards                                      */}
       {/* ------------------------------------------------------------------ */}
 
-      <section
-        className="stat-cards-grid"
-        aria-label="Surveillance Statistics"
-      >
+      <section className="stat-cards-grid grid-cols-6" aria-label="Surveillance Key Metrics">
         <StatCard
           title="Total Cameras"
           value={totalCameras}
           sub={
             totalCameras === 0
               ? 'No registered surveillance nodes'
-              : `${totalCameras} configured border node${
-                  totalCameras === 1
-                    ? ''
-                    : 's'
-                }`
+              : `${totalCameras} configured border node${totalCameras === 1 ? '' : 's'}`
           }
           accent="blue"
           icon="📹"
@@ -184,83 +199,64 @@ export default function DashboardPage({
           sub={onlineSubtitle}
           accent="green"
           icon="⚡"
-          badge={
-            onlineCameras > 0
-              ? 'ACTIVE'
-              : undefined
-          }
+          badge={onlineCameras > 0 ? 'ACTIVE' : undefined}
         />
 
         <StatCard
           title="Active Alerts"
-          value={
-            alertsLoading && alerts.length === 0
-              ? '...'
-              : activeAlertsCount
-          }
+          value={telemetryLoading ? '...' : activeAlerts.length}
           sub={
-            alertsError
+            telemetryError
               ? 'Telemetry unavailable'
-              : activeAlertsCount === 0
-                ? 'Perimeter secure'
-                : `${criticalAlerts} critical, ${highAlerts} high`
+              : activeAlerts.length === 0
+              ? 'Perimeter secure'
+              : `${criticalAlerts} critical, ${highAlerts} high`
           }
-          accent={
-            activeAlertsCount > 0
-              ? 'amber'
-              : 'green'
-          }
+          accent={activeAlerts.length > 0 ? 'amber' : 'green'}
           icon="🚨"
-          badge={
-            activeAlertsCount > 0
-              ? 'THREAT'
-              : 'SECURE'
-          }
+          badge={activeAlerts.length > 0 ? 'THREAT' : 'SECURE'}
         />
 
         <StatCard
           title="Events Today"
-          value={
-            eventsLoading && events.length === 0
-              ? '...'
-              : todayEvents.length
-          }
+          value={telemetryLoading ? '...' : todayEvents.length}
           sub={
-            eventsError
+            telemetryError
               ? 'Telemetry unavailable'
               : todayEvents.length === 0
-                ? 'No events recorded today'
-                : `${events.length} total surveillance events`
+              ? 'No events recorded today'
+              : `${allEvents.length} total surveillance events`
           }
           accent="blue"
           icon="📋"
         />
+
+        <StatCard
+          title="Persons Detected"
+          value={telemetryLoading ? '...' : personsDetected}
+          sub="Tracked pedestrian targets"
+          accent="blue"
+          icon="👤"
+        />
+
+        <StatCard
+          title="Vehicles Detected"
+          value={telemetryLoading ? '...' : vehiclesDetected}
+          sub="Tracked motorized targets"
+          accent="red"
+          icon="🚗"
+        />
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Critical Telemetry                                                 */}
-      {/* ------------------------------------------------------------------ */}
-
+      {/* Critical Telemetry Warning */}
       {telemetryError && (
-        <div
-          className="modal-alert-error"
-          role="alert"
-        >
-          <span className="alert-icon">
-            ⚠
-          </span>
-
-          <span>
-            {telemetryError}
-          </span>
-
+        <div className="modal-alert-error" role="alert">
+          <span className="alert-icon">⚠</span>
+          <span>{telemetryError}</span>
           <button
             type="button"
-            className="btn btn-sm"
-            onClick={() => {
-              void refreshAlerts();
-              void refreshEvents();
-            }}
+            className="btn btn-sm btn-secondary"
+            onClick={() => void refreshTelemetry()}
           >
             Retry
           </button>
@@ -271,32 +267,21 @@ export default function DashboardPage({
       {/* Live Surveillance Feeds                                             */}
       {/* ------------------------------------------------------------------ */}
 
-      <section
-        className="dashboard-section"
-        aria-label="Live Video Grid"
-      >
+      <section className="dashboard-section" aria-label="Live Video Grid">
         <div className="section-header-bar">
           <div className="section-title-wrap">
             <span className="section-indicator" />
-
             <div>
-              <h3 className="section-heading">
-                Live Surveillance Feeds
-              </h3>
-
-              <span className="section-caption">
+              <h3 className="section-heading">Live Border Surveillance</h3>
+              <span className="section-caption font-mono">
                 {streams.length === 0
-                  ? 'No active streams detected'
-                  : `${streams.length} registered stream channel${
-                      streams.length === 1
-                        ? ''
-                        : 's'
-                    }`}
+                  ? 'NO CHANNELS CONNECTED'
+                  : `${streams.length} ACTIVE STREAM${streams.length === 1 ? '' : 'S'} // AI DETECTIONS ENABLED`}
               </span>
             </div>
           </div>
 
-          <div className="header-action-buttons" style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className="section-actions header-action-buttons" style={{ display: 'flex', gap: '0.75rem' }}>
             <button
               type="button"
               className="btn btn-secondary btn-tactical btn-sm"
@@ -312,47 +297,34 @@ export default function DashboardPage({
               className="btn btn-primary btn-tactical btn-sm"
               onClick={onOpenConnectModal}
             >
-              + Connect Camera
+              + Connect Camera Stream
             </button>
           </div>
         </div>
 
         {streamsError && (
-          <div
-            className="modal-alert-error"
-            role="alert"
-          >
-            <span className="alert-icon">
-              ⚠
-            </span>
-
-            <span>
-              Error fetching streams:{' '}
-              {streamsError}
-            </span>
+          <div className="modal-alert-error" role="alert">
+            <span className="alert-icon">⚠</span>
+            <span>Error fetching streams: {streamsError}</span>
           </div>
         )}
 
         <CameraGrid
           streams={streams}
           loading={streamsLoading}
-          onOpenConnectModal={
-            onOpenConnectModal
-          }
-          onCameraDisconnected={
-            handleCameraDisconnected
-          }
+          onOpenConnectModal={onOpenConnectModal}
+          onCameraDisconnected={handleCameraDisconnected}
           onError={handleCameraError}
           showFilters={streams.length > 0}
         />
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Recent Alerts + System Telemetry                                    */}
+      {/* Recent Alerts + System Telemetry Dual Panel                         */}
       {/* ------------------------------------------------------------------ */}
 
       <div className="dashboard-grid-dual">
-        <AlertPanel onResolveSuccess={() => { refreshAlerts(); refreshEvents(); }} />
+        <AlertPanel onResolveSuccess={() => void refreshTelemetry()} />
         <SystemInfo
           health={health}
           loading={healthLoading}
@@ -362,7 +334,69 @@ export default function DashboardPage({
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* AI Detection Capabilities                                           */}
+      {/* Bottom Panel: Recent Security Events Audit Feed                     */}
+      {/* ------------------------------------------------------------------ */}
+
+      <section className="dashboard-section" aria-label="Recent Security Events Audit">
+        <div className="section-header-bar">
+          <div className="section-title-wrap">
+            <span className="section-indicator" />
+            <div>
+              <h3 className="section-heading">Recent Security Events Log</h3>
+              <span className="section-caption font-mono">
+                CHRONOLOGICAL BORDER AUDIT TRAIL // REAL-TIME INFERENCE LOG
+              </span>
+            </div>
+          </div>
+          <span className="count-pill font-mono">{allEvents.length} TOTAL RECORDED</span>
+        </div>
+
+        <div className="table-responsive border-tactical" style={{ borderRadius: '4px', overflow: 'hidden' }}>
+          <table className="tactical-table">
+            <thead>
+              <tr>
+                <th>TIME</th>
+                <th>DATE</th>
+                <th>CAMERA / SENSOR</th>
+                <th>EVENT CLASSIFICATION</th>
+                <th>SEVERITY</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                    No security events recorded yet. Connect a camera feed to start border monitoring.
+                  </td>
+                </tr>
+              ) : (
+                allEvents.slice(0, 8).map((evt) => (
+                  <tr key={evt.id}>
+                    <td className="font-mono">{formatEventTime(evt.timestamp)}</td>
+                    <td className="font-mono text-muted">{formatEventDate(evt.timestamp)}</td>
+                    <td className="font-mono font-bold text-cyan">{evt.camera_id}</td>
+                    <td className="font-mono">
+                      {evt.event_type.replace(/_/g, ' ').toUpperCase()}
+                    </td>
+                    <td>
+                      <span className={`severity-badge severity-${evt.severity.toLowerCase()} font-mono`}>
+                        {evt.severity}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="status-pill-logged font-mono">LOGGED</span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* AI Detection Capabilities Matrix                                    */}
       {/* ------------------------------------------------------------------ */}
 
       <CapabilityGrid />

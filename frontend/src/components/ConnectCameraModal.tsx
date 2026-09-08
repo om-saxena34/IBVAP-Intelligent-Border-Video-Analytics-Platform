@@ -37,6 +37,7 @@ export default function ConnectCameraModal({
 
   // Selected file details
   const [selectedFile, setSelectedFile] = useState<SelectedFileInfo | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Webcam device index
@@ -74,39 +75,68 @@ export default function ConnectCameraModal({
 
   if (!isOpen) return null;
 
-  // Handle local video file picker
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  // Handle local video file picker with automatic backend upload
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const ext = file.name.split('.').pop()?.toUpperCase() || 'VIDEO';
-      setSelectedFile({
-        name: file.name,
-        sizeFormatted: formatBytes(file.size),
-        extension: ext,
-      });
-      // Pre-fill path with filename (relative to backend execution directory)
-      setSourceUrl(file.name);
-      setErrorMessage(null);
+    if (!file) return;
+
+    const ext = file.name.split('.').pop()?.toUpperCase() || 'VIDEO';
+    setSelectedFile({
+      name: file.name,
+      sizeFormatted: formatBytes(file.size),
+      extension: ext,
+    });
+    setErrorMessage(null);
+
+    // Automatically upload file to backend so OpenCV worker can access it immediately
+    setIsUploading(true);
+    try {
+      const uploadRes = await streamsApi.uploadVideo(file);
+      if (uploadRes.ok && uploadRes.data?.file_path) {
+        setSourceUrl(uploadRes.data.file_path);
+        if (!cameraId) {
+          const autoId = `CAM-${file.name.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 10).toUpperCase()}`;
+          setCameraId(autoId);
+        }
+      } else {
+        // Fallback to filename relative path
+        setSourceUrl(`samples/${file.name}`);
+      }
+    } catch {
+      setSourceUrl(`samples/${file.name}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleUseSampleFile = () => {
-    const samplePath = 'samples/test_border_feed.mp4';
-    setSourceUrl(samplePath);
+  const handleUsePrimaryCctvSample = () => {
+    setSourceType('FILE');
+    setSourceUrl('samples/Sample for CCTV.mp4');
+    setSelectedFile({
+      name: 'Sample for CCTV.mp4',
+      sizeFormatted: '1.2 MB',
+      extension: 'MP4',
+    });
+    setCameraId('CAM-CCTV-01');
+    setLocation('Border Gate Bravo (Highway)');
+    setSector('Sector 02 - Roadway');
+    setLoopVideo(true);
+    setErrorMessage(null);
+  };
+
+  const handleUseSecondarySample = () => {
+    setSourceType('FILE');
+    setSourceUrl('samples/test_border_feed.mp4');
     setSelectedFile({
       name: 'test_border_feed.mp4',
       sizeFormatted: '80.0 KB',
       extension: 'MP4',
     });
-    if (!cameraId) {
-      setCameraId('CAM-001');
-    }
-    if (!location) {
-      setLocation('Border Checkpoint Alpha');
-    }
-    if (!sector) {
-      setSector('Sector 04');
-    }
+    setCameraId('CAM-001');
+    setLocation('Border Checkpoint Alpha');
+    setSector('Sector 04');
+    setLoopVideo(true);
+    setErrorMessage(null);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -118,7 +148,7 @@ export default function ConnectCameraModal({
     const finalUrl = sourceType === 'WEBCAM' ? webcamIndex.trim() : sourceUrl.trim();
 
     if (!trimmedId) {
-      setErrorMessage('Camera ID is required. Example: CAM-001');
+      setErrorMessage('Camera ID is required. Example: CAM-CCTV-01');
       return;
     }
     if (!finalUrl) {
@@ -146,7 +176,7 @@ export default function ConnectCameraModal({
     try {
       const res = await streamsApi.connectStream(payload);
       if (res.ok) {
-        setSuccessMessage('Camera connected successfully');
+        setSuccessMessage('Camera connected and AI pipeline initialized successfully');
         setTimeout(() => {
           setCameraId('');
           setSourceUrl('');
@@ -156,7 +186,7 @@ export default function ConnectCameraModal({
           setSuccessMessage(null);
           onSuccess(trimmedId);
           onClose();
-        }, 600);
+        }, 500);
       } else {
         setErrorMessage(res.error || 'Failed to connect camera stream.');
       }
@@ -180,9 +210,9 @@ export default function ConnectCameraModal({
       >
         <div className="modal-header">
           <div className="modal-title-group">
-            <span className="modal-tag">STREAMS // NEW INGESTION</span>
+            <span className="modal-tag font-mono">IBVAP // STREAM INGESTION</span>
             <h2 id="modal-title" className="modal-title">
-              Connect Camera
+              Connect Camera &amp; AI Pipeline
             </h2>
           </div>
           <button
@@ -194,6 +224,31 @@ export default function ConnectCameraModal({
           >
             ✕
           </button>
+        </div>
+
+        {/* Tactical Fast-Demo Preset Bar */}
+        <div className="demo-preset-banner">
+          <span className="demo-preset-label font-mono">⚡ QUICK DEMO PRESETS:</span>
+          <div className="demo-preset-buttons">
+            <button
+              type="button"
+              className="btn btn-sm btn-accent-crimson"
+              onClick={handleUsePrimaryCctvSample}
+              disabled={loading}
+              title="Auto-fill with primary test video (Sample for CCTV.mp4)"
+            >
+              ★ Load Primary CCTV (Sample for CCTV.mp4)
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={handleUseSecondarySample}
+              disabled={loading}
+              title="Auto-fill with synthetic checkpoint video"
+            >
+              Load Secondary Feed (test_border_feed)
+            </button>
+          </div>
         </div>
 
         {errorMessage && (
@@ -215,39 +270,39 @@ export default function ConnectCameraModal({
             {/* Camera ID */}
             <div className="form-group">
               <label htmlFor="cam-id" className="form-label">
-                Camera ID <span className="req">*</span>
+                Camera Callsign / ID <span className="req">*</span>
               </label>
               <input
                 id="cam-id"
                 type="text"
-                className="form-input"
-                placeholder="Example: CAM-001"
+                className="form-input font-mono"
+                placeholder="Example: CAM-CCTV-01"
                 value={cameraId}
                 onChange={(e) => setCameraId(e.target.value)}
                 disabled={loading}
                 required
                 autoFocus
               />
-              <span className="form-hint">Unique callsign or sensor ID</span>
+              <span className="form-hint">Unique tactical identifier</span>
             </div>
 
             {/* Source Type Selector */}
             <div className="form-group">
               <label htmlFor="cam-type" className="form-label">
-                Source Type <span className="req">*</span>
+                Ingestion Source <span className="req">*</span>
               </label>
               <select
                 id="cam-type"
-                className="form-select"
+                className="form-select font-mono"
                 value={sourceType}
                 onChange={(e) => handleSourceTypeChange(e.target.value as StreamSourceType)}
                 disabled={loading}
               >
-                <option value="FILE">FILE (Local MP4 / Video File)</option>
-                <option value="RTSP">RTSP (CCTV / IP Camera Stream)</option>
-                <option value="WEBCAM">WEBCAM (Hardware Video Device)</option>
+                <option value="FILE">FILE (CCTV / Recorded MP4)</option>
+                <option value="RTSP">RTSP (CCTV / IP Security Camera)</option>
+                <option value="WEBCAM">WEBCAM (Hardware USB Device)</option>
               </select>
-              <span className="form-hint">Ingestion protocol</span>
+              <span className="form-hint">Video feed protocol</span>
             </div>
           </div>
 
@@ -255,7 +310,7 @@ export default function ConnectCameraModal({
           {sourceType === 'FILE' && (
             <div className="file-source-panel">
               <label className="form-label">
-                Select Video File <span className="req">*</span>
+                Select CCTV Video File <span className="req">*</span>
               </label>
 
               {/* Native file picker hidden trigger */}
@@ -265,7 +320,7 @@ export default function ConnectCameraModal({
                 accept=".mp4,.avi,.mov,.mkv,.webm"
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
-                disabled={loading}
+                disabled={loading || isUploading}
               />
 
               <div className="file-picker-row">
@@ -273,18 +328,9 @@ export default function ConnectCameraModal({
                   type="button"
                   className="btn btn-secondary file-select-btn"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={loading}
+                  disabled={loading || isUploading}
                 >
-                  📁 Select Video File (.mp4, .avi, .mov)
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-accent-cyan btn-sm sample-preset-btn"
-                  onClick={handleUseSampleFile}
-                  disabled={loading}
-                  title="Auto-fill with generated project sample video"
-                >
-                  ⚡ Use Sample MP4 (test_border_feed)
+                  {isUploading ? '⏳ Uploading Video to Backend...' : '📁 Upload CCTV File (.mp4, .avi, .mov)'}
                 </button>
               </div>
 
@@ -297,6 +343,7 @@ export default function ConnectCameraModal({
                     <div className="file-meta-sub">
                       <span>Size: {selectedFile.sizeFormatted}</span>
                       <span className="file-format-badge">{selectedFile.extension}</span>
+                      {isUploading && <span className="uploading-tag">UPLOADING...</span>}
                     </div>
                   </div>
                   <button
@@ -316,32 +363,18 @@ export default function ConnectCameraModal({
               {/* Source Path Input */}
               <div className="form-group" style={{ marginTop: '10px' }}>
                 <label htmlFor="cam-file-path" className="form-label">
-                  File Source Path (for backend OpenCV worker) <span className="req">*</span>
+                  File Path (relative to project root or uploaded path) <span className="req">*</span>
                 </label>
                 <input
                   id="cam-file-path"
                   type="text"
                   className="form-input font-mono"
-                  placeholder="e.g. samples/test_border_feed.mp4 or C:/Videos/border.mp4"
+                  placeholder="e.g. samples/Sample for CCTV.mp4"
                   value={sourceUrl}
                   onChange={(e) => setSourceUrl(e.target.value)}
                   disabled={loading}
                   required
                 />
-              </div>
-
-              {/* Informative Limitation Callout */}
-              <div className="server-path-notice">
-                <span className="notice-icon">ℹ</span>
-                <div className="notice-text">
-                  <strong>Browser Sandbox &amp; Server Filesystem Notice:</strong>
-                  <p>
-                    Browsers cannot transmit local Windows drive paths (e.g. <code>C:\Users\...</code>)
-                    due to security isolation. Because the FastAPI OpenCV worker runs on the local host machine,
-                    ensure the path is located within the project repository (e.g. <code>samples/test_border_feed.mp4</code>)
-                    or specify its absolute system path above.
-                  </p>
-                </div>
               </div>
             </div>
           )}
@@ -356,7 +389,7 @@ export default function ConnectCameraModal({
                 id="cam-rtsp-url"
                 type="text"
                 className="form-input font-mono"
-                placeholder="Example: rtsp://192.168.1.100:554/stream"
+                placeholder="Example: rtsp://admin:password@192.168.1.100:554/live"
                 value={sourceUrl}
                 onChange={(e) => setSourceUrl(e.target.value)}
                 disabled={loading}
@@ -377,7 +410,7 @@ export default function ConnectCameraModal({
               <div className="webcam-selector-group">
                 <select
                   id="cam-webcam"
-                  className="form-select"
+                  className="form-select font-mono"
                   value={webcamIndex}
                   onChange={(e) => {
                     setWebcamIndex(e.target.value);
@@ -402,9 +435,6 @@ export default function ConnectCameraModal({
                   title="Or type custom device index"
                 />
               </div>
-              <span className="form-hint">
-                Hardware device index mapped by OS video drivers
-              </span>
             </div>
           )}
 
@@ -412,35 +442,35 @@ export default function ConnectCameraModal({
             {/* Location */}
             <div className="form-group">
               <label htmlFor="cam-location" className="form-label">
-                Location
+                Perimeter Location
               </label>
               <input
                 id="cam-location"
                 type="text"
                 className="form-input"
-                placeholder="Example: Border Checkpoint Alpha"
+                placeholder="Example: Border Gate Bravo"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 disabled={loading}
               />
-              <span className="form-hint">Perimeter or physical station</span>
+              <span className="form-hint">Physical surveillance post</span>
             </div>
 
             {/* Sector */}
             <div className="form-group">
               <label htmlFor="cam-sector" className="form-label">
-                Sector
+                Defense Sector
               </label>
               <input
                 id="cam-sector"
                 type="text"
                 className="form-input"
-                placeholder="Example: Sector 04"
+                placeholder="Example: Sector 02"
                 value={sector}
                 onChange={(e) => setSector(e.target.value)}
                 disabled={loading}
               />
-              <span className="form-hint">Surveillance zone callsign</span>
+              <span className="form-hint">Tactical command zone</span>
             </div>
           </div>
 
@@ -454,7 +484,7 @@ export default function ConnectCameraModal({
                   onChange={(e) => setLoopVideo(e.target.checked)}
                   disabled={loading}
                 />
-                <span>Loop video continuously upon playback completion</span>
+                <span>Continuously loop video playback for persistent surveillance demo</span>
               </label>
             </div>
           )}
@@ -472,9 +502,9 @@ export default function ConnectCameraModal({
             <button
               type="submit"
               className="btn btn-primary btn-tactical"
-              disabled={loading}
+              disabled={loading || isUploading}
             >
-              {loading ? 'Connecting Camera...' : 'Connect Camera'}
+              {loading ? 'Initializing Stream...' : 'Connect & Activate AI'}
             </button>
           </div>
         </form>
