@@ -32,7 +32,7 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
 
       {/* Main Navigation */}
       <nav className="sidebar-nav">
-        <div className="nav-section-label">OPERATIONS</div>
+        <div className="nav-section-label">SURVEILLANCE OPERATIONS</div>
         <NavLink
           to="/"
           end
@@ -43,11 +43,20 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
         </NavLink>
 
         <NavLink
+          to="/surveillance"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          <span className="nav-icon">🎯</span>
+          <span className="nav-label">Live Surveillance</span>
+          <span className="nav-counter count-active">AI LIVE</span>
+        </NavLink>
+
+        <NavLink
           to="/cameras"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
-          <span className="nav-icon">📹</span>
-          <span className="nav-label">Live Cameras</span>
+          <span className="nav-icon">📷</span>
+          <span className="nav-label">Cameras</span>
           {health && health.online_cameras > 0 && (
             <span className="nav-counter count-active">{health.online_cameras}</span>
           )}
@@ -57,9 +66,8 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
           to="/alerts"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
-          <span className="nav-icon">⚡</span>
+          <span className="nav-icon">🚨</span>
           <span className="nav-label">Alerts</span>
-          <span className="nav-counter count-na">N/A</span>
         </NavLink>
 
         <NavLink
@@ -68,10 +76,9 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
         >
           <span className="nav-icon">📋</span>
           <span className="nav-label">Events</span>
-          <span className="nav-counter count-na">N/A</span>
         </NavLink>
 
-        <div className="nav-section-label">ANALYTICS & SYSTEM</div>
+        <div className="nav-section-label">BORDER INTELLIGENCE</div>
         <NavLink
           to="/analytics"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -81,11 +88,19 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
         </NavLink>
 
         <NavLink
-          to="/settings"
+          to="/zones"
           className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
         >
-          <span className="nav-icon">⚙</span>
-          <span className="nav-label">Settings</span>
+          <span className="nav-icon">🛡</span>
+          <span className="nav-label">Zones</span>
+        </NavLink>
+
+        <NavLink
+          to="/health"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          <span className="nav-icon">⚡</span>
+          <span className="nav-label">System Health</span>
         </NavLink>
       </nav>
 

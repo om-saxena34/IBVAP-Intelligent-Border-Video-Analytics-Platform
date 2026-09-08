@@ -7,40 +7,52 @@
 
 /* ---- CSS Custom Properties ---- */
 :root {
-  /* Background layers */
-  --bg-base: #0a0c10;
-  --bg-surface: #111520;
-  --bg-elevated: #181d2a;
-  --bg-hover: #1e2438;
-  --bg-active: #252c42;
+  /* Background layers - Tactical Dark Neutral */
+  --bg-base: #0c0d0f;
+  --bg-surface: #141619;
+  --bg-elevated: #1a1d21;
+  --bg-hover: #22262b;
+  --bg-active: #2b3037;
 
-  /* Brand / accent */
-  --accent-primary: #3b82f6;
-  --accent-primary-dim: rgba(59, 130, 246, 0.15);
-  --accent-glow: rgba(59, 130, 246, 0.08);
+  /* Brand / accent - Professional Brownish Red (Defense / Border Operations) */
+  --accent-primary: #a84232;
+  --accent-primary-hover: #ba4e3c;
+  --accent-primary-dim: rgba(168, 66, 50, 0.16);
+  --accent-glow: rgba(168, 66, 50, 0.08);
+  --accent-border: #6e2c22;
+  --accent-secondary: #c07d32;
 
-  /* Status colors */
-  --status-online: #22c55e;
-  --status-online-dim: rgba(34, 197, 94, 0.12);
-  --status-offline: #ef4444;
-  --status-offline-dim: rgba(239, 68, 68, 0.12);
-  --status-reconnect: #f59e0b;
-  --status-reconnect-dim: rgba(245, 158, 11, 0.12);
-  --status-error: #f97316;
-  --status-error-dim: rgba(249, 115, 22, 0.12);
-  --status-unknown: #6b7280;
-  --status-unknown-dim: rgba(107, 114, 128, 0.12);
+  /* Status colors - Muted Tactical Defense */
+  --status-critical: #c53030;
+  --status-critical-dim: rgba(197, 48, 48, 0.16);
+  --status-high: #d9534f;
+  --status-high-dim: rgba(217, 83, 79, 0.16);
+  --status-medium: #c07d32;
+  --status-medium-dim: rgba(192, 125, 50, 0.16);
+  --status-low: #3e7b54;
+  --status-low-dim: rgba(62, 123, 84, 0.16);
+  --status-online: #2d8a4e;
+  --status-online-dim: rgba(45, 138, 78, 0.14);
+  --status-offline: #8a342d;
+  --status-offline-dim: rgba(138, 52, 45, 0.14);
+  --status-reconnect: #b87a28;
+  --status-reconnect-dim: rgba(184, 122, 40, 0.14);
+  --status-error: #c53030;
+  --status-error-dim: rgba(197, 48, 48, 0.14);
+  --status-unknown: #5a6270;
+  --status-unknown-dim: rgba(90, 98, 112, 0.14);
 
-  /* Text */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --text-disabled: #334155;
+  /* Text - Crisp Light Gray & White */
+  --text-primary: #f2f4f7;
+  --text-secondary: #98a2b3;
+  --text-muted: #667085;
+  --text-disabled: #3d4450;
 
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  /* Borders - Subtle Slate */
+  --border-subtle: #1e2227;
+  --border-default: #2b3037;
+  --border-strong: #3d444f;
+  --border-accent: #6e2c22;
 
   /* Sidebar */
   --sidebar-width: 240px;

@@ -29,7 +29,12 @@ async def get_all_alerts() -> AlertListResponse:
 @router.patch(
     "/{alert_id}/resolve",
     response_model=Alert,
-    summary="Resolve an alert",
+    summary="Resolve an alert (PATCH)",
+)
+@router.post(
+    "/{alert_id}/resolve",
+    response_model=Alert,
+    summary="Resolve an alert (POST)",
 )
 async def resolve_alert(alert_id: int) -> Alert:
     alert = alert_service.resolve_alert(alert_id)

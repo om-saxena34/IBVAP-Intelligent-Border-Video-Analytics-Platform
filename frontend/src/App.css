@@ -2134,3 +2134,372 @@
     gap: 16px;
   }
 }
+
+/* ==========================================================================
+   Tactical Surveillance Command, Zones, and 6-Card Dashboard Enhancements
+   ========================================================================== */
+
+/* 6-Card Statistics Grid */
+.stat-cards-grid.grid-cols-6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1440px) {
+  .stat-cards-grid.grid-cols-6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-cards-grid.grid-cols-6 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Demo Preset Banner */
+.demo-preset-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(186, 78, 60, 0.12);
+  border: 1px solid rgba(186, 78, 60, 0.35);
+  border-radius: var(--radius-xs);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.demo-preset-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ba4e3c;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.demo-preset-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Tactical Buttons & Accent Colors */
+.btn-accent-crimson {
+  background: linear-gradient(135deg, #a84232 0%, #ba4e3c 100%);
+  color: #ffffff;
+  border: 1px solid #d45b47;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-accent-crimson:hover {
+  background: linear-gradient(135deg, #ba4e3c 0%, #cb5642 100%);
+  box-shadow: 0 0 10px rgba(186, 78, 60, 0.4);
+}
+
+.btn-danger-subtle {
+  background: rgba(186, 78, 60, 0.2);
+  border: 1px solid rgba(186, 78, 60, 0.5);
+  color: #ff7b6b;
+}
+
+.btn-danger-subtle:hover {
+  background: rgba(186, 78, 60, 0.35);
+}
+
+.text-crimson { color: #ba4e3c !important; }
+.text-orange { color: #f97316 !important; }
+.text-green { color: #22c55e !important; }
+.text-cyan { color: #00d2ff !important; }
+.text-amber { color: #eab308 !important; }
+
+.border-tactical {
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Surveillance Command Room Layout */
+.surveillance-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .surveillance-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.surveillance-viewport-panel {
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.monitor-top-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+
+.ribbon-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rec-dot {
+  color: #ba4e3c;
+  animation: pulse-glow 1.5s infinite;
+}
+
+.sector-tag {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 2px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.tactical-threat-pill {
+  padding: 3px 10px;
+  border: 1px solid;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.monitor-canvas-container {
+  background: #000000;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+}
+
+.monitor-img-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.monitor-stream-image {
+  max-width: 100%;
+  max-height: 640px;
+  object-fit: contain;
+  display: block;
+}
+
+.monitor-bottom-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface-raised);
+  border-top: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hud-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hud-telemetry-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+}
+
+.telemetry-pill {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 4px 8px;
+  border-radius: 2px;
+  border: 1px solid var(--border-subtle);
+}
+
+/* Surveillance Side Panel */
+.surveillance-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tactical-panel-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.threat-reasons-box {
+  background: rgba(186, 78, 60, 0.12);
+  border: 1px solid rgba(186, 78, 60, 0.4);
+  border-radius: 2px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.reasons-list {
+  margin: 4px 0 0 16px;
+  padding: 0;
+  color: #ff9e91;
+}
+
+.capabilities-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.capability-check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: var(--bg-surface-raised);
+  border-radius: 2px;
+}
+
+.cap-indicator {
+  color: #22c55e;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.cap-label {
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+/* Tactical Tables */
+.tactical-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tactical-table th {
+  background: var(--bg-surface-raised);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-medium);
+  letter-spacing: 0.5px;
+}
+
+.tactical-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.tactical-table tbody tr:hover {
+  background: rgba(186, 78, 60, 0.06);
+}
+
+.status-pill-logged {
+  background: rgba(0, 210, 255, 0.1);
+  color: #00d2ff;
+  border: 1px solid rgba(0, 210, 255, 0.3);
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Form Grid 4 & Zones Subgroup */
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .form-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.zone-subgroup {
+  padding: 12px;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+.zone-subheading {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Subsystem Pipeline Grid */
+.pipeline-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .pipeline-modules-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.module-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+.module-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.module-status-dot.green {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+/* Viewport Quick Actions */
+.viewport-quick-actions {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+}

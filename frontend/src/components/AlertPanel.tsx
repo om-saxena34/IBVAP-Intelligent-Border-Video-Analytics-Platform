@@ -6,6 +6,7 @@ export default function AlertPanel() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resolvingId, setResolvingId] = useState<number | null>(null);
 
   const loadAlerts = useCallback(async () => {
     const response = await alertsApi.active();
@@ -25,12 +26,27 @@ export default function AlertPanel() {
 
     const interval = window.setInterval(() => {
       void loadAlerts();
-    }, 5000);
+    }, 4000);
 
     return () => {
       window.clearInterval(interval);
     };
   }, [loadAlerts]);
+
+  const handleResolve = async (alertId: number) => {
+    setResolvingId(alertId);
+    try {
+      const res = await alertsApi.resolve(alertId);
+      if (res.ok) {
+        // Optimistically remove or reload
+        setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+      }
+    } catch {
+      // Soft fail
+    } finally {
+      setResolvingId(null);
+    }
+  };
 
   const criticalCount = alerts.filter(
     (alert) => alert.severity === 'CRITICAL'
@@ -42,37 +58,27 @@ export default function AlertPanel() {
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-
     if (Number.isNaN(date.getTime())) {
       return timestamp;
     }
-
-    return date.toLocaleString();
+    return date.toLocaleTimeString();
   };
 
   return (
-    <div className="alert-panel-card">
+    <div className="alert-panel-card border-tactical">
       <div className="panel-header">
         <div className="panel-title-group">
-          <span className="panel-tag">INTELLIGENCE FEED</span>
-          <h3 className="panel-title">Recent Border Alerts</h3>
+          <span className="panel-tag font-mono">IBVAP // LIVE INTELLIGENCE</span>
+          <h3 className="panel-title">Active Threat Incidents</h3>
         </div>
 
         <div className="panel-badge-group">
-          <span
-            className={`badge ${
-              error ? 'badge-amber' : 'badge-green'
-            }`}
-          >
-            <span
-              className={`dot ${
-                error ? 'amber' : 'green'
-              }`}
-            />
-            {error ? 'API ERROR' : 'LIVE'}
+          <span className={`badge ${error ? 'badge-amber' : 'badge-green'}`}>
+            <span className={`dot ${error ? 'amber' : 'green'}`} />
+            {error ? 'API RETRY' : 'REAL-TIME'}
           </span>
 
-          <span className="count-pill">
+          <span className="count-pill font-mono">
             {alerts.length} ACTIVE
           </span>
         </div>
@@ -82,26 +88,17 @@ export default function AlertPanel() {
         {loading ? (
           <div className="alert-empty-state">
             <div className="alert-empty-icon">⏳</div>
-            <h4 className="alert-empty-title">
-              Loading alert telemetry
-            </h4>
-            <p className="alert-empty-text">
-              Connecting to the live threat detection pipeline...
-            </p>
+            <h4 className="alert-empty-title">Loading incident telemetry</h4>
+            <p className="alert-empty-text">Connecting to intelligence engine...</p>
           </div>
         ) : error ? (
           <div className="alert-empty-state">
             <div className="alert-empty-icon">⚠</div>
-            <h4 className="alert-empty-title">
-              Alert telemetry unavailable
-            </h4>
-            <p className="alert-empty-text">
-              {error}
-            </p>
-
+            <h4 className="alert-empty-title">Threat telemetry unavailable</h4>
+            <p className="alert-empty-text">{error}</p>
             <button
               type="button"
-              className="btn btn-sm"
+              className="btn btn-sm btn-secondary"
               onClick={() => {
                 setLoading(true);
                 void loadAlerts();
@@ -113,73 +110,81 @@ export default function AlertPanel() {
         ) : alerts.length === 0 ? (
           <div className="alert-empty-state">
             <div className="alert-empty-icon">🛡</div>
-            <h4 className="alert-empty-title">
-              No active alerts
-            </h4>
+            <h4 className="alert-empty-title">Perimeter Secure</h4>
             <p className="alert-empty-text">
-              No active border threats have been detected.
+              No active border breaches, zone violations, or unauthorized targets detected.
             </p>
-
-            <div className="alert-api-notice">
-              <span className="notice-icon">✓</span>
-              <span>
-                Live alert telemetry is connected and monitoring
-                active surveillance events.
-              </span>
-            </div>
           </div>
         ) : (
           <>
             <div className="alert-summary">
-              <span>
+              <span className="font-mono text-crimson font-bold">
                 {criticalCount} CRITICAL
               </span>
-
-              <span>
+              <span className="font-mono text-orange font-bold">
                 {highCount} HIGH
               </span>
-
-              <span>
+              <span className="font-mono">
                 {alerts.length} TOTAL ACTIVE
               </span>
             </div>
 
             <div className="alert-list">
-              {alerts.slice(0, 6).map((alert) => (
-                <div
-                  className="alert-item"
-                  key={alert.id}
-                >
-                  <div className="alert-item-main">
-                    <div className="alert-item-header">
-                      <strong>
-                        {alert.event_type}
-                      </strong>
+              {alerts.slice(0, 7).map((alert) => {
+                const isResolving = resolvingId === alert.id;
+                const eventLabel = alert.event_type.replace(/_/g, ' ').toUpperCase();
+                const confidencePct = alert.confidence != null ? `${Math.round(alert.confidence * 100)}%` : null;
 
-                      <span
-                        className={`severity-badge severity-${alert.severity.toLowerCase()}`}
-                      >
-                        {alert.severity}
-                      </span>
+                return (
+                  <div
+                    className={`alert-item alert-border-${alert.severity.toLowerCase()}`}
+                    key={alert.id}
+                  >
+                    <div className="alert-item-main">
+                      <div className="alert-item-header">
+                        <span className="alert-event-name font-mono">
+                          {eventLabel}
+                        </span>
+
+                        <span
+                          className={`severity-badge severity-${alert.severity.toLowerCase()} font-mono`}
+                        >
+                          {alert.severity}
+                        </span>
+                      </div>
+
+                      <div className="alert-item-meta font-mono">
+                        <span>CAM: {alert.camera_id}</span>
+                        {confidencePct && <span>CONF: {confidencePct}</span>}
+                        <span>{formatTimestamp(alert.timestamp)}</span>
+                      </div>
+
+                      {alert.details && (
+                        <div className="alert-item-details">
+                          {alert.details}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="alert-item-meta">
-                      <span>
-                        Camera: {alert.camera_id}
-                      </span>
-
-                      <span>
-                        {formatTimestamp(alert.timestamp)}
-                      </span>
+                    <div className="alert-item-actions">
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-outline-danger"
+                        onClick={() => handleResolve(alert.id)}
+                        disabled={isResolving}
+                        title="Mark alert as acknowledged and resolved"
+                      >
+                        {isResolving ? '...' : 'Acknowledge'}
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {alerts.length > 6 && (
-              <div className="alert-list-footer">
-                Showing latest 6 of {alerts.length} active alerts
+            {alerts.length > 7 && (
+              <div className="alert-list-footer font-mono">
+                Showing latest 7 of {alerts.length} active alerts
               </div>
             )}
           </>

@@ -101,6 +101,8 @@ export interface Alert {
   severity: Severity;
   status: AlertStatus;
   timestamp: string;
+  confidence?: number | null;
+  details?: string | null;
 }
 
 export interface CreateAlertRequest {
@@ -181,6 +183,40 @@ export interface AnalyticsFrameResponse {
   faces: FaceResult[];
   plates: PlateResult[];
   events: AnalyticsEvent[];
+}
+
+export interface DetectionsTelemetry {
+  camera_id: string;
+  timestamp: number | null;
+  fps: number;
+  source_fps: number;
+  resolution: string;
+  status: string;
+  detections: DetectionResult[];
+  faces: FaceResult[];
+  plates: PlateResult[];
+  events: AnalyticsEvent[];
+  threat_score: number;
+  threat_level: string;
+  capabilities: Record<string, any>;
+  counts: {
+    total: number;
+    persons: number;
+    vehicles: number;
+    faces: number;
+    plates: number;
+  };
+}
+
+export interface ZoneConfig {
+  camera_id?: string;
+  virtual_fence?: [[number, number], [number, number]] | [number, number][] | null;
+  fence?: [[number, number], [number, number]] | null;
+  restricted_zone?: [number, number][] | null;
+  expected_direction?: [number, number];
+  loitering_seconds?: number;
+  min_loitering_seconds?: number;
+  max_group_size?: number;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -391,6 +427,11 @@ export const streamsApi = {
       `/streams/${encodeURIComponent(cameraId)}/health`,
     ),
 
+  detections: (cameraId: string) =>
+    apiClient.get<DetectionsTelemetry>(
+      `/streams/${encodeURIComponent(cameraId)}/detections`,
+    ),
+
   connect: (request: StreamConnectRequest) =>
     apiClient.post<StreamInfo>(
       "/streams/connect",
@@ -398,14 +439,63 @@ export const streamsApi = {
     ),
 
   disconnect: (cameraId: string) =>
-    apiClient.delete<StreamDisconnectResponse>(
-      `/streams/${encodeURIComponent(cameraId)}`,
+    apiClient.post<StreamDisconnectResponse>(
+      `/streams/${encodeURIComponent(cameraId)}/disconnect`,
     ),
 
-  snapshot: (cameraId: string) =>
+  snapshot: (cameraId: string, annotated: boolean = true) =>
     fetchBlob(
-      `/streams/${encodeURIComponent(cameraId)}/snapshot`,
+      `/streams/${encodeURIComponent(cameraId)}/snapshot?annotated=${annotated}`,
     ),
+
+  getLiveStreamUrl: (cameraId: string, annotated: boolean = true): string => {
+    const base = apiClient.getBaseUrl();
+    return `${base}/streams/${encodeURIComponent(cameraId)}/live?annotated=${annotated}`;
+  },
+
+  getSnapshotSrc: (cameraId: string, annotated: boolean = true): string => {
+    const base = apiClient.getBaseUrl();
+    return `${base}/streams/${encodeURIComponent(cameraId)}/snapshot?annotated=${annotated}`;
+  },
+
+  upload: async (file: File): Promise<ApiResponse<{ filename: string; path: string }>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const url = `${apiClient.getBaseUrl()}/streams/upload`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        return { ok: false, error: `Upload failed: HTTP ${response.status}` };
+      }
+      const data = await response.json();
+      return { ok: true, data };
+    } catch (err: unknown) {
+      return { ok: false, error: err instanceof Error ? err.message : "Upload failed" };
+    }
+  },
+};
+
+/* -------------------------------------------------------------------------- */
+/* Zones API                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export const zonesApi = {
+  list: () => apiClient.get<Record<string, ZoneConfig>>("/intelligence/zones"),
+  getAllZones: () => apiClient.get<Record<string, ZoneConfig>>("/intelligence/zones"),
+  get: (cameraId: string) =>
+    apiClient.get<ZoneConfig>(`/intelligence/zones?camera_id=${encodeURIComponent(cameraId)}`),
+  getCameraZones: (cameraId: string) =>
+    apiClient.get<ZoneConfig>(`/intelligence/zones?camera_id=${encodeURIComponent(cameraId)}`),
+  update: (data: { camera_id: string; fence?: any; restricted_zone?: any }) =>
+    apiClient.post<{ camera_id: string; status: string; zones: ZoneConfig }>("/intelligence/zones", data),
+  updateCameraZones: (cameraId: string, config: ZoneConfig) =>
+    apiClient.post<ZoneConfig>("/intelligence/zones", {
+      camera_id: cameraId,
+      ...config,
+    }),
 };
 
 /* -------------------------------------------------------------------------- */
@@ -571,3 +661,4 @@ export const analyticsApi = {
       }));
   },
 };
+

@@ -17,6 +17,7 @@ from config.settings import settings
 from backend.api.events import router as events_router
 from backend.api.alerts import router as alerts_router
 from backend.api.analytics import router as analytics_router
+from backend.api.zones import router as zones_router
 
 
 # Configure logging
@@ -62,6 +63,7 @@ app.include_router(streams_router, prefix=settings.API_PREFIX)
 app.include_router(events_router)
 app.include_router(alerts_router)
 app.include_router(analytics_router)
+app.include_router(zones_router)
 
 @app.get("/", tags=["Root"])
 async def root() -> JSONResponse:

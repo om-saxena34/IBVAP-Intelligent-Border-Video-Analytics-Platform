@@ -8,10 +8,13 @@ import ConnectCameraModal from './components/ConnectCameraModal';
 
 // Modular Pages
 import DashboardPage from './pages/DashboardPage';
+import LiveSurveillancePage from './pages/LiveSurveillancePage';
 import LiveCamerasPage from './pages/LiveCamerasPage';
 import AlertsPage from './pages/AlertsPage';
 import EventsPage from './pages/EventsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import ZonesPage from './pages/ZonesPage';
+import SystemHealthPage from './pages/SystemHealthPage';
 import SettingsPage from './pages/SettingsPage';
 
 import './App.css';
@@ -101,6 +104,15 @@ export default function App() {
                 }
               />
               <Route
+                path="/surveillance"
+                element={
+                  <LiveSurveillancePage
+                    onOpenConnectModal={() => setIsConnectModalOpen(true)}
+                    onNotify={notify}
+                  />
+                }
+              />
+              <Route
                 path="/cameras"
                 element={
                   <LiveCamerasPage
@@ -112,6 +124,8 @@ export default function App() {
               <Route path="/alerts" element={<AlertsPage />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/zones" element={<ZonesPage onNotify={notify} />} />
+              <Route path="/health" element={<SystemHealthPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>
           </main>
