@@ -47,6 +47,9 @@
 - [Future Enhancements](#future-enhancements)
 - [Smart India Hackathon (SIH) 2026](#smart-india-hackathon-sih-2026)
 - [License](#license)
+  - [Project-Use Note & Operational Disclaimer](#project-use-note--operational-disclaimer)
+  - [Repository Usage & Attribution](#repository-usage--attribution)
+  - [Third-Party Software & Dependencies](#third-party-software--dependencies)
 
 ---
 
@@ -755,12 +758,56 @@ In video analytics and computer vision systems, actual operational throughput an
 
 ## License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for complete details.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
 ```
+MIT License
+
 Copyright (c) 2026 Om Saxena
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction...
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
+
+### Project-Use Note & Operational Disclaimer
+
+- **Educational & Research Scope**: This repository is provided strictly for educational, research, demonstration, and evaluation purposes.
+- **Surveillance Prototype**: The project demonstrates an AI-based intelligent video analytics prototype for border surveillance using commodity IP CCTV streams.
+- **Open Access & Reuse**: The repository may be viewed, cloned, studied, modified, and reused according to the terms of the MIT License.
+- **Attribution Requirement**: Proper attribution to the original author (Om Saxena) must be retained in all copies or substantial portions of the software, as required by the MIT License.
+- **Operational Disclaimer**: This project is a proof-of-concept software prototype and should not be represented as an official government security system or deployed in a real border-security environment without appropriate authorization, validation, security review, and operational testing.
+
+### Repository Usage & Attribution
+
+Under the MIT License:
+- Developers, researchers, and evaluators are free to inspect, clone, branch, and experiment with the codebase locally.
+- You are welcome to adapt the algorithms, user interface components, and analytical pipelines for academic research, hackathons, and technical evaluations.
+- Please retain the copyright notice and license text in derived distributions.
+
+### Third-Party Software & Dependencies
+
+The MIT License of this repository applies exclusively to the original architectural source code, custom analytical engines, API route implementations, and frontend interfaces authored for this project.
+
+It does not overwrite, modify, or claim ownership of third-party libraries, pretrained neural network weights, or external frameworks utilized as dependencies:
+- **YOLOv8 / Ultralytics**: Used for deep-learning object detection, governed by the [Ultralytics License](https://github.com/ultralytics/ultralytics/blob/main/LICENSE).
+- **EasyOCR**: Used for optical character recognition, licensed under the [Apache 2.0 License](https://github.com/JaidedAI/EasyOCR/blob/master/LICENSE).
+- **OpenCV**: Used for computer vision and video stream processing, licensed under the [Apache 2.0 License](https://opencv.org/license/).
+- **PyTorch**: Deep learning execution backend, licensed under the [PyTorch BSD-style License](https://github.com/pytorch/pytorch/blob/main/LICENSE).
+- **FastAPI / Uvicorn**: High-performance asynchronous backend framework, licensed under the [MIT License](https://github.com/fastapi/fastapi/blob/master/LICENSE).
+- **React / Vite / TypeScript**: Frontend application library, bundler, and type system, licensed under their respective open-source licenses (MIT / Apache 2.0).
+- **Sample Media**: Video files located in `samples/` are included solely for local algorithmic evaluation and demonstration purposes.
