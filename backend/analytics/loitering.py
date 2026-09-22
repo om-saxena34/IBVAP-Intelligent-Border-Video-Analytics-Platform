@@ -11,9 +11,12 @@ class LoiteringDetector:
     def __init__(
         self,
         threshold_seconds: float = 30.0,
+        grace_seconds: float = 2.0,
     ) -> None:
         self.threshold_seconds = threshold_seconds
+        self.grace_seconds = grace_seconds
         self.first_seen: dict[int, float] = {}
+        self.last_seen: dict[int, float] = {}
         self.alerted: set[int] = set()
 
     def update(
@@ -37,6 +40,7 @@ class LoiteringDetector:
                 track_id,
                 current_time,
             )
+            self.last_seen[track_id] = current_time
 
             duration = (
                 current_time - self.first_seen[track_id]
@@ -53,14 +57,17 @@ class LoiteringDetector:
                         "type": "loitering",
                         "track_id": track_id,
                         "class": detection.class_name,
-                        "duration_seconds": duration,
+                        "duration_seconds": round(duration, 1),
                     }
                 )
 
-        stale_ids = set(self.first_seen) - active_ids
-
-        for track_id in stale_ids:
-            self.first_seen.pop(track_id, None)
-            self.alerted.discard(track_id)
+        # Cleanup stale tracks only after grace period expires
+        stale_candidates = set(self.first_seen) - active_ids
+        for track_id in stale_candidates:
+            last = self.last_seen.get(track_id, 0.0)
+            if current_time - last > self.grace_seconds:
+                self.first_seen.pop(track_id, None)
+                self.last_seen.pop(track_id, None)
+                self.alerted.discard(track_id)
 
         return events

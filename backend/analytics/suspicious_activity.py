@@ -47,14 +47,17 @@ class SuspiciousActivityScorer:
         "group_movement": "Unusual group formation along border line",
     }
 
-    def __init__(self, cooldown_seconds: float = 8.0) -> None:
+    def __init__(self, cooldown_seconds: float = 8.0, grace_seconds: float = 2.5) -> None:
         self.cooldown_seconds = cooldown_seconds
+        self.grace_seconds = grace_seconds
         # track_id -> set of active signal types
         self._track_signals: dict[int, set[str]] = defaultdict(set)
         # track_id -> dict of signal -> first_seen timestamp
         self._track_timestamps: dict[int, dict[str, float]] = defaultdict(dict)
         # track_id -> last alert timestamp
         self._last_alert_time: dict[int, float] = {}
+        # track_id -> last seen timestamp for grace period
+        self._track_last_seen: dict[int, float] = {}
 
     def score_track(self, track_id: int) -> tuple[int, str, list[str]]:
         """Calculate score, risk level, and human-readable reasons for a track."""
@@ -95,12 +98,19 @@ class SuspiciousActivityScorer:
         current_time = time.time() if now is None else now
         new_composite_events: list[dict[str, Any]] = []
 
-        # Cleanup stale tracks no longer in active frame
+        # Update last seen for all currently active tracks
+        for tid in tracks:
+            self._track_last_seen[tid] = current_time
+
+        # Cleanup stale tracks only after grace period
         stale_tracks = set(self._track_signals.keys()) - tracks
         for st in stale_tracks:
-            self._track_signals.pop(st, None)
-            self._track_timestamps.pop(st, None)
-            self._last_alert_time.pop(st, None)
+            last = self._track_last_seen.get(st, 0.0)
+            if current_time - last > self.grace_seconds:
+                self._track_signals.pop(st, None)
+                self._track_timestamps.pop(st, None)
+                self._last_alert_time.pop(st, None)
+                self._track_last_seen.pop(st, None)
 
         # Ingest incoming events
         for event in events:

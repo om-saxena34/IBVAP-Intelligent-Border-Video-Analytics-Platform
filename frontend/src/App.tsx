@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useHealth } from './hooks/useHealth';
 import { useStreams } from './hooks/useStreams';
-import Sidebar from './components/Sidebar';
-import Topbar from './components/Topbar';
+import NavigationRail from './components/NavigationRail';
+import CommandBar from './components/CommandBar';
+import CommandPalette from './components/CommandPalette';
 import ConnectCameraModal from './components/ConnectCameraModal';
 
 // Modular Pages
@@ -26,6 +27,7 @@ interface ToastState {
 
 export default function App() {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   const {
@@ -36,6 +38,18 @@ export default function App() {
   } = useHealth(10000);
 
   const { refresh: refreshStreams } = useStreams(8000);
+
+  // Global Ctrl+K / Cmd+K shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const notify = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -58,18 +72,22 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-layout">
-        {/* Left Navigation Sidebar */}
-        <Sidebar onOpenConnectModal={() => setIsConnectModalOpen(true)} />
+        {/* Left Navigation Rail (FORGE COMMAND) */}
+        <NavigationRail
+          onOpenConnectModal={() => setIsConnectModalOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        />
 
-        {/* Main Application Area */}
+        {/* Main Command Operations Area */}
         <div className="app-main">
-          {/* Top Header */}
-          <Topbar
+          {/* Top Mission Command Bar */}
+          <CommandBar
             health={health}
             loading={healthLoading}
             error={healthError}
             onRefresh={refreshHealth}
             onOpenConnectModal={() => setIsConnectModalOpen(true)}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           />
 
           {/* Backend Offline Warning Banner */}
@@ -78,7 +96,7 @@ export default function App() {
               <div className="banner-content">
                 <span className="banner-icon">⚠</span>
                 <span className="banner-text">
-                  <strong>Backend unavailable:</strong> Unable to connect to IBVAP backend. Is the server running?
+                  <strong>Gateway Offline:</strong> Unable to connect to IBVAP backend on 127.0.0.1:8000. Is the FastAPI service running?
                 </span>
               </div>
               <button
@@ -130,6 +148,13 @@ export default function App() {
             </Routes>
           </main>
         </div>
+
+        {/* Global Command Palette (Ctrl+K) */}
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          onOpenConnectModal={() => setIsConnectModalOpen(true)}
+        />
 
         {/* Global Camera Connect Modal */}
         <ConnectCameraModal

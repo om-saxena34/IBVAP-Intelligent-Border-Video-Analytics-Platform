@@ -58,7 +58,7 @@ export default function SystemHealthPage() {
             <span className="stat-icon">⚙</span>
           </div>
           <div className="stat-value font-mono">
-            {health?.status === 'HEALTHY' || health?.status === 'OK' ? (
+            {health?.status?.toLowerCase() === 'healthy' || health?.status?.toLowerCase() === 'ok' ? (
               <span className="text-green">OPERATIONAL</span>
             ) : healthError ? (
               <span className="text-crimson">OFFLINE</span>

@@ -72,6 +72,23 @@ export const streamsApi = {
       `/streams/${encodeURIComponent(cameraId)}/disconnect`
     ),
 
+  /** Convenience aliases for start, stop, and disconnect */
+  stop: (cameraId: string) =>
+    apiClient.post<StreamDisconnectResponse>(
+      `/streams/${encodeURIComponent(cameraId)}/disconnect`
+    ),
+
+  disconnect: (cameraId: string) =>
+    apiClient.post<StreamDisconnectResponse>(
+      `/streams/${encodeURIComponent(cameraId)}/disconnect`
+    ),
+
+  start: (cameraId: string, sourceUrl?: string) =>
+    apiClient.post<StreamInfo>('/streams/connect', {
+      camera_id: cameraId,
+      source_url: sourceUrl || 'samples/Sample for CCTV.mp4',
+    }),
+
   /**
    * GET /streams/:id/detections — real-time structured detection telemetry
    */

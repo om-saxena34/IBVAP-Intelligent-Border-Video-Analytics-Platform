@@ -52,6 +52,7 @@ async def upload_video(file: UploadFile = File(...)) -> dict:
         return {
             "filename": filename,
             "path": f"samples/{filename}",
+            "file_path": f"samples/{filename}",
             "size_bytes": len(contents),
             "status": "ready",
         }
@@ -60,6 +61,26 @@ async def upload_video(file: UploadFile = File(...)) -> dict:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Upload failed: {str(e)}",
         )
+
+
+@router.get(
+    "/samples",
+    summary="List available sample CCTV videos for quick ingestion",
+)
+async def list_sample_videos() -> List[dict]:
+    samples_dir = Path("samples")
+    if not samples_dir.is_dir():
+        return []
+
+    results = []
+    for p in sorted(samples_dir.glob("*.mp4")):
+        results.append({
+            "name": p.name,
+            "path": f"samples/{p.name}",
+            "size_bytes": p.stat().st_size,
+            "size_formatted": f"{p.stat().st_size / (1024 * 1024):.1f} MB" if p.stat().st_size >= 1048576 else f"{p.stat().st_size / 1024:.0f} KB",
+        })
+    return results
 
 
 @router.get(
@@ -125,7 +146,7 @@ async def get_stream_detections(camera_id: str) -> dict:
     description="Streams multipart JPEG frames with YOLO detections, tracking IDs, and border zones at high FPS.",
 )
 async def get_live_stream(camera_id: str, annotated: bool = True) -> StreamingResponse:
-    generator = stream_manager.generate_mjpeg_stream(camera_id, annotated=annotated, target_fps=25)
+    generator = stream_manager.generate_mjpeg_stream_async(camera_id, annotated=annotated, target_fps=25)
     if generator is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -12,7 +12,7 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
   const { activeCount: activeAlertsCount, loading: alertsLoading } = useAlerts(4000);
   const { events, loading: eventsLoading } = useEvents(4000);
 
-  const isOnline = Boolean(health && !error && health.status === 'healthy');
+  const isOnline = Boolean(health && !error && health.status?.toLowerCase() === 'healthy');
 
   return (
     <aside className="app-sidebar">
@@ -31,7 +31,7 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
       {/* Surveillance Tagline */}
       <div className="sidebar-classification">
         <span className="classification-pill">SECURE // RESTRICTED</span>
-        <span className="platform-tag">SIH-2026 // C2 COMMAND</span>
+        <span className="platform-tag">DEF-AI // C2 OPS</span>
       </div>
 
       {/* Main Navigation */}
@@ -113,6 +113,14 @@ export default function Sidebar({ onOpenConnectModal }: SidebarProps) {
         >
           <span className="nav-icon">⚡</span>
           <span className="nav-label">System Health</span>
+        </NavLink>
+
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+        >
+          <span className="nav-icon">⚙</span>
+          <span className="nav-label">Settings</span>
         </NavLink>
       </nav>
 

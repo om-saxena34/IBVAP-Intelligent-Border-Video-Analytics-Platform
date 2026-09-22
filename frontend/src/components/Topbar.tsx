@@ -30,7 +30,7 @@ export default function Topbar({
     return () => clearInterval(timer);
   }, []);
 
-  const isOnline = Boolean(health && !error && health.status === 'healthy');
+  const isOnline = Boolean(health && !error && health.status?.toLowerCase() === 'healthy');
   const onlineCameras = health?.online_cameras ?? 0;
   const totalCameras = health?.total_cameras ?? 0;
 
@@ -44,7 +44,7 @@ export default function Topbar({
             <h2 className="topbar-title">Intelligent Border Video Analytics Platform</h2>
           </div>
           <p className="topbar-subtitle">
-            Autonomous Border Surveillance &amp; AI-Powered Threat Interdiction • SIH 2026
+            Autonomous Perimeter Surveillance &amp; AI-Powered Threat Interdiction • C2 Operations
           </p>
         </div>
       </div>

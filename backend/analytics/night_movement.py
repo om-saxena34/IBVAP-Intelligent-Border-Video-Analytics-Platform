@@ -71,4 +71,10 @@ class NightMovementDetector:
                 detection.track_id
             ] = center
 
+        # Prune stale tracks that disappeared
+        active_ids = {d.track_id for d in detections if d.track_id is not None}
+        stale_ids = set(self.previous_centers.keys()) - active_ids
+        for tid in stale_ids:
+            self.previous_centers.pop(tid, None)
+
         return events

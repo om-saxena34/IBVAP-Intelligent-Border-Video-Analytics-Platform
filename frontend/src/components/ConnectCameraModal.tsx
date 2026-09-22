@@ -23,6 +23,91 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+interface SamplePreset {
+  id: string;
+  name: string;
+  filename: string;
+  sector: string;
+  location: string;
+  tag: string;
+  size: string;
+}
+
+const SAMPLE_PRESETS: SamplePreset[] = [
+  {
+    id: 'CAM-CCTV-01',
+    name: 'Perimeter Gate & Highway',
+    filename: 'Sample for CCTV.mp4',
+    sector: 'Sector 02 - Roadway',
+    location: 'Border Gate Bravo',
+    tag: 'Highway / Vehicles',
+    size: '3.6 MB',
+  },
+  {
+    id: 'CAM-CCTV-02',
+    name: 'Multi-Lane Highway Corridor',
+    filename: 'Sample2 for CCTV.mp4',
+    sector: 'Sector 01 - North',
+    location: 'Highway Observation Post',
+    tag: 'High-Density Traffic',
+    size: '27.7 MB',
+  },
+  {
+    id: 'CAM-CCTV-03',
+    name: 'Checkpoint Traffic Classification',
+    filename: 'Sample3 class for CCTV.mp4',
+    sector: 'Sector 03 - Entry',
+    location: 'Customs Interdiction Bay',
+    tag: 'Vehicle Classification',
+    size: '2.7 MB',
+  },
+  {
+    id: 'CAM-CCTV-04',
+    name: 'Perimeter Movement & Transit',
+    filename: 'Sample4 class movement for CCTV.mp4',
+    sector: 'Sector 04 - Fence',
+    location: 'Perimeter Line Post 14',
+    tag: 'Movement Analytics',
+    size: '1.6 MB',
+  },
+  {
+    id: 'CAM-CCTV-05',
+    name: 'Loitering in Buffer Sector',
+    filename: 'Sample5 class loitering for CCTV.mp4',
+    sector: 'Sector 05 - Exclusion',
+    location: 'Buffer Zone Perimeter',
+    tag: 'Loitering & Dwell',
+    size: '1.5 MB',
+  },
+  {
+    id: 'CAM-CCTV-06',
+    name: 'Perimeter Fence Breach / Cut',
+    filename: 'Sample6 class cut for CCTV.mp4',
+    sector: 'Sector 06 - Boundary',
+    location: 'Wire Fence Section 9',
+    tag: 'Fence Tampering',
+    size: '2.5 MB',
+  },
+  {
+    id: 'CAM-CCTV-07',
+    name: 'Border Approach Movement',
+    filename: 'Sample7 class adit for CCTV.mp4',
+    sector: 'Sector 07 - Approach',
+    location: 'Border Access Route',
+    tag: 'Corridor Movement',
+    size: '2.6 MB',
+  },
+  {
+    id: 'CAM-001',
+    name: 'Checkpoint Alpha Synthetic Feed',
+    filename: 'test_border_feed.mp4',
+    sector: 'Sector 01',
+    location: 'Checkpoint Alpha',
+    tag: 'Test Pipeline',
+    size: '80 KB',
+  },
+];
+
 export default function ConnectCameraModal({
   isOpen,
   onClose,
@@ -92,8 +177,9 @@ export default function ConnectCameraModal({
     setIsUploading(true);
     try {
       const uploadRes = await streamsApi.uploadVideo(file);
-      if (uploadRes.ok && uploadRes.data?.file_path) {
-        setSourceUrl(uploadRes.data.file_path);
+      const filePath = uploadRes.ok ? (uploadRes.data?.file_path || uploadRes.data?.path) : null;
+      if (filePath) {
+        setSourceUrl(filePath);
         if (!cameraId) {
           const autoId = `CAM-${file.name.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 10).toUpperCase()}`;
           setCameraId(autoId);
@@ -109,35 +195,21 @@ export default function ConnectCameraModal({
     }
   };
 
-  const handleUsePrimaryCctvSample = () => {
+  const handleSelectPreset = (preset: SamplePreset) => {
     setSourceType('FILE');
-    setSourceUrl('samples/Sample for CCTV.mp4');
+    setSourceUrl(`samples/${preset.filename}`);
     setSelectedFile({
-      name: 'Sample for CCTV.mp4',
-      sizeFormatted: '1.2 MB',
+      name: preset.filename,
+      sizeFormatted: preset.size,
       extension: 'MP4',
     });
-    setCameraId('CAM-CCTV-01');
-    setLocation('Border Gate Bravo (Highway)');
-    setSector('Sector 02 - Roadway');
+    setCameraId(preset.id);
+    setLocation(preset.location);
+    setSector(preset.sector);
     setLoopVideo(true);
     setErrorMessage(null);
   };
 
-  const handleUseSecondarySample = () => {
-    setSourceType('FILE');
-    setSourceUrl('samples/test_border_feed.mp4');
-    setSelectedFile({
-      name: 'test_border_feed.mp4',
-      sizeFormatted: '80.0 KB',
-      extension: 'MP4',
-    });
-    setCameraId('CAM-001');
-    setLocation('Border Checkpoint Alpha');
-    setSector('Sector 04');
-    setLoopVideo(true);
-    setErrorMessage(null);
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -228,26 +300,30 @@ export default function ConnectCameraModal({
 
         {/* Tactical Fast-Demo Preset Bar */}
         <div className="demo-preset-banner">
-          <span className="demo-preset-label font-mono">⚡ QUICK DEMO PRESETS:</span>
-          <div className="demo-preset-buttons">
-            <button
-              type="button"
-              className="btn btn-sm btn-accent-crimson"
-              onClick={handleUsePrimaryCctvSample}
-              disabled={loading}
-              title="Auto-fill with primary test video (Sample for CCTV.mp4)"
-            >
-              ★ Load Primary CCTV (Sample for CCTV.mp4)
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-secondary"
-              onClick={handleUseSecondarySample}
-              disabled={loading}
-              title="Auto-fill with synthetic checkpoint video"
-            >
-              Load Secondary Feed (test_border_feed)
-            </button>
+          <div className="demo-preset-header" style={{ marginBottom: '8px' }}>
+            <span className="demo-preset-label font-mono">⚡ BUILT-IN SAMPLE CCTV FEEDS:</span>
+            <span className="demo-preset-hint text-xs text-muted font-mono" style={{ marginLeft: '8px' }}>
+              Select a sample feed to immediately load verified CCTV footage
+            </span>
+          </div>
+          <div className="demo-preset-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
+            {SAMPLE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className={`btn btn-sm ${sourceUrl === `samples/${preset.filename}` ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '2px', padding: '8px 10px', height: 'auto' }}
+                onClick={() => handleSelectPreset(preset)}
+                disabled={loading}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                  <span style={{ fontSize: '10px', color: 'var(--accent-warm)', fontWeight: 600 }}>{preset.tag}</span>
+                  <span style={{ fontSize: '9px', opacity: 0.7 }} className="font-mono">{preset.size}</span>
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>{preset.name}</div>
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)' }} className="font-mono">{preset.filename}</div>
+              </button>
+            ))}
           </div>
         </div>
 

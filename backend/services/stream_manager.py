@@ -45,8 +45,6 @@ class StreamManager:
             self._workers[request.camera_id] = worker
             worker.start()
 
-        # Give worker up to 500ms to open capture and update initial status
-        time.sleep(0.5)
         return self._build_stream_info(worker)
 
     def disconnect_stream(self, camera_id: str) -> bool:
@@ -122,13 +120,22 @@ class StreamManager:
         return worker.get_latest_detections()
 
     def generate_mjpeg_stream(self, camera_id: str, annotated: bool = True, target_fps: int = 25):
-        """Generate MJPEG video stream chunks for a camera."""
+        """Generate MJPEG video stream chunks for a camera (sync generator)."""
         with self._lock:
             worker = self._workers.get(camera_id)
 
         if not worker:
             return None
         return worker.generate_mjpeg_stream(annotated=annotated, target_fps=target_fps)
+
+    def generate_mjpeg_stream_async(self, camera_id: str, annotated: bool = True, target_fps: int = 25):
+        """Generate MJPEG video stream chunks for a camera asynchronously."""
+        with self._lock:
+            worker = self._workers.get(camera_id)
+
+        if not worker:
+            return None
+        return worker.generate_mjpeg_stream_async(annotated=annotated, target_fps=target_fps)
 
     def update_camera_zones(
         self,

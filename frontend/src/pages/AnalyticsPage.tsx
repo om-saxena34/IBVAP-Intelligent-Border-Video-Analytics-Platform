@@ -103,33 +103,38 @@ export default function AnalyticsPage() {
   }, [events]);
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1>Intelligence & Traffic Analytics</h1>
-
-          <p>
-            Sector movement density, perimeter events, AI detections,
-            and surveillance intelligence metrics.
-          </p>
+    <div className="page-container analytics-page-forge">
+      {/* Top Header Bar */}
+      <div className="section-header-bar">
+        <div className="section-title-wrap">
+          <span className="section-indicator" />
+          <div>
+            <h2 className="section-heading font-display">Border Intelligence & Telemetry Analytics</h2>
+            <span className="section-caption font-mono">
+              EVENT CLUSTERING // THREAT DENSITY // DEEP VISION SENSING METRICS
+            </span>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void loadAnalytics(true)}
-          disabled={refreshing}
-        >
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
+        <div className="header-action-buttons font-mono">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => void loadAnalytics(true)}
+            disabled={refreshing}
+          >
+            {refreshing ? 'Syncing...' : '↻ Sync Telemetry'}
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="error-state">
-          <strong>Unable to load analytics</strong>
-          <span>{error}</span>
-
+        <div className="backend-offline-banner font-mono mb-4">
+          <span className="banner-icon">⚠</span>
+          <span>Unable to load intelligence analytics: {error}</span>
           <button
             type="button"
+            className="btn btn-secondary btn-xs"
             onClick={() => void loadAnalytics()}
           >
             Retry
@@ -138,225 +143,147 @@ export default function AnalyticsPage() {
       )}
 
       {loading ? (
-        <div className="empty-state">
-          Loading intelligence analytics...
+        <div className="surveillance-empty-state font-mono">
+          <span className="empty-spinner">↻</span>
+          <span>SYNCHRONIZING TELEMETRY METRICS...</span>
         </div>
       ) : (
         <>
-          {/* Summary */}
-          <div className="analytics-summary-grid">
-            <div className="analytics-summary-card">
-              <span>Total Events</span>
-              <strong>
-                {numberValue(summary.total_events)}
-              </strong>
+          {/* Top 4 KPI Cluster */}
+          <div className="overview-kpi-cluster mb-4">
+            <div className="forge-kpi">
+              <span className="kpi-label font-mono">TOTAL EVENTS LOGGED</span>
+              <div className="kpi-value-row">
+                <strong className="kpi-value font-mono text-cream">{numberValue(summary.total_events)}</strong>
+              </div>
             </div>
-
-            <div className="analytics-summary-card">
-              <span>Events Today</span>
-              <strong>
-                {numberValue(summary.events_today)}
-              </strong>
+            <div className="forge-kpi">
+              <span className="kpi-label font-mono">EVENTS TODAY</span>
+              <div className="kpi-value-row">
+                <strong className="kpi-value font-mono text-rust">{numberValue(summary.events_today)}</strong>
+              </div>
             </div>
-
-            <div className="analytics-summary-card">
-              <span>Active Alerts</span>
-              <strong>
-                {numberValue(summary.active_alerts)}
-              </strong>
+            <div className={`forge-kpi ${numberValue(summary.active_alerts) > 0 ? 'status-critical' : ''}`}>
+              <span className="kpi-label font-mono">ACTIVE ALERTS</span>
+              <div className="kpi-value-row">
+                <strong className="kpi-value font-mono text-critical">{numberValue(summary.active_alerts)}</strong>
+              </div>
             </div>
-
-            <div className="analytics-summary-card">
-              <span>AI Detections</span>
-              <strong>
-                {numberValue(summary.total_detections)}
-              </strong>
+            <div className="forge-kpi">
+              <span className="kpi-label font-mono">VISION DETECTIONS</span>
+              <div className="kpi-value-row">
+                <strong className="kpi-value font-mono text-orange">{numberValue(summary.total_detections)}</strong>
+              </div>
             </div>
           </div>
 
-          {/* Severity */}
-          <section className="dashboard-section">
-            <div className="section-header-bar">
-              <div className="section-title-wrap">
-                <span className="section-indicator" />
-
-                <div>
-                  <h3 className="section-heading">
-                    Threat Severity Distribution
-                  </h3>
-
-                  <span className="section-caption">
-                    Current surveillance event severity
-                  </span>
+          <div className="forge-supporting-grid mb-4">
+            {/* Severity Distribution Panel */}
+            <div className="tactical-panel-card border-tactical">
+              <div className="panel-header">
+                <div className="panel-title-group">
+                  <span className="panel-tag font-mono">RISK STRATIFICATION</span>
+                  <h3 className="panel-title font-display">Threat Severity Breakdown</h3>
+                </div>
+              </div>
+              <div className="panel-body font-mono text-xs">
+                <div className="detection-row">
+                  <span className="text-critical font-bold">● CRITICAL SEVERITY:</span>
+                  <strong className="text-cream">{numberValue(summary.critical_events)}</strong>
+                </div>
+                <div className="detection-row">
+                  <span className="text-orange font-bold">● HIGH SEVERITY:</span>
+                  <strong className="text-cream">{numberValue(summary.high_events)}</strong>
+                </div>
+                <div className="detection-row">
+                  <span className="text-amber font-bold">● MEDIUM SEVERITY:</span>
+                  <strong className="text-cream">{numberValue(summary.medium_events)}</strong>
+                </div>
+                <div className="detection-row">
+                  <span className="text-muted font-bold">● LOW / INFORMATIONAL:</span>
+                  <strong className="text-cream">{numberValue(summary.low_events)}</strong>
                 </div>
               </div>
             </div>
 
-            <div className="analytics-summary-grid">
-              <div className="analytics-summary-card">
-                <span>Critical</span>
-                <strong>
-                  {numberValue(summary.critical_events)}
-                </strong>
-              </div>
-
-              <div className="analytics-summary-card">
-                <span>High</span>
-                <strong>
-                  {numberValue(summary.high_events)}
-                </strong>
-              </div>
-
-              <div className="analytics-summary-card">
-                <span>Medium</span>
-                <strong>
-                  {numberValue(summary.medium_events)}
-                </strong>
-              </div>
-
-              <div className="analytics-summary-card">
-                <span>Low</span>
-                <strong>
-                  {numberValue(summary.low_events)}
-                </strong>
-              </div>
-            </div>
-          </section>
-
-          {/* Event Analytics */}
-          <section className="dashboard-section">
-            <div className="section-header-bar">
-              <div className="section-title-wrap">
-                <span className="section-indicator" />
-
-                <div>
-                  <h3 className="section-heading">
-                    Detection Event Breakdown
-                  </h3>
-
-                  <span className="section-caption">
-                    Events generated by the AI analytics pipeline
-                  </span>
+            {/* Event Breakdown Panel */}
+            <div className="tactical-panel-card border-tactical" style={{ gridColumn: 'span 2' }}>
+              <div className="panel-header">
+                <div className="panel-title-group">
+                  <span className="panel-tag font-mono">AI DETECTIONS</span>
+                  <h3 className="panel-title font-display">Detection Type Distribution</h3>
                 </div>
+                <span className="count-pill font-mono">{eventBreakdown.length} TYPES</span>
               </div>
-            </div>
-
-            {eventBreakdown.length === 0 ? (
-              <div className="empty-state">
-                No analytics events available yet.
-              </div>
-            ) : (
-              <div className="analytics-summary-grid">
-                {eventBreakdown.map(([eventType, count]) => (
-                  <div
-                    className="analytics-summary-card"
-                    key={eventType}
-                  >
-                    <span>
-                      {formatEventType(eventType)}
-                    </span>
-
-                    <strong>{count}</strong>
+              <div className="panel-body">
+                {eventBreakdown.length === 0 ? (
+                  <div className="panel-empty-state font-mono">
+                    <span className="text-muted">No analytics events recorded yet.</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Recent Events */}
-          <section className="dashboard-section">
-            <div className="section-header-bar">
-              <div className="section-title-wrap">
-                <span className="section-indicator" />
-
-                <div>
-                  <h3 className="section-heading">
-                    Recent Intelligence Events
-                  </h3>
-
-                  <span className="section-caption">
-                    Latest events received from surveillance analytics
-                  </span>
-                </div>
+                ) : (
+                  <div className="font-mono text-xs" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                    {eventBreakdown.map(([eventType, count]) => (
+                      <div key={eventType} className="detection-row" style={{ background: 'var(--bg-surface-raised)', borderRadius: '2px' }}>
+                        <span className="text-muted">{formatEventType(eventType)}</span>
+                        <strong className="text-cream">{count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
+          </div>
 
-            {events.length === 0 ? (
-              <div className="empty-state">
-                No recent analytics events.
+          {/* Recent Intelligence Events Table */}
+          <div className="tactical-panel-card border-tactical">
+            <div className="panel-header">
+              <div className="panel-title-group">
+                <span className="panel-tag font-mono">AUDIT FEED</span>
+                <h3 className="panel-title font-display">Recent Intelligence Events</h3>
               </div>
-            ) : (
-              <div className="events-list">
-                {events.slice(0, 10).map((event, index) => (
-                  <article
-                    className="event-card"
-                    key={`${event.timestamp ?? 'event'}-${index}`}
-                  >
-                    <div className="event-card-main">
-                      <div className="event-card-title">
-                        <div>
-                          <h2>
-                            {formatEventType(
-                              typeof event.event_type === 'string'
-                                ? event.event_type
-                                : 'Unknown Event',
-                            )}
-                          </h2>
-
-                          <div className="event-meta">
-                            <span>
-                              Camera:{' '}
-                              {typeof event.camera_id === 'string'
-                                ? event.camera_id
-                                : 'Unknown'}
+              <span className="count-pill font-mono">SHOWING LAST {Math.min(events.length, 10)}</span>
+            </div>
+            <div className="panel-body p-0">
+              <div className="table-responsive">
+                <table className="tactical-table font-mono text-xs">
+                  <thead>
+                    <tr>
+                      <th>TIMESTAMP</th>
+                      <th>CAMERA NODE</th>
+                      <th>EVENT TYPE</th>
+                      <th>SEVERITY</th>
+                      <th>SOURCE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {events.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                          No recent surveillance events on record.
+                        </td>
+                      </tr>
+                    ) : (
+                      events.slice(0, 10).map((event, idx) => (
+                        <tr key={`${event.timestamp ?? 'ev'}-${idx}`}>
+                          <td className="text-muted">
+                            {event.timestamp ? new Date(event.timestamp).toLocaleString() : 'N/A'}
+                          </td>
+                          <td className="text-cream font-bold">{event.camera_id || 'UNKNOWN'}</td>
+                          <td className="text-rust">{formatEventType(event.event_type || 'Unknown')}</td>
+                          <td>
+                            <span className={`threat-sev-badge ${(event.severity || 'low').toLowerCase()}`}>
+                              {event.severity || 'LOW'}
                             </span>
-
-                            {typeof event.severity === 'string' && (
-                              <span>
-                                Severity: {event.severity}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {typeof event.severity === 'string' && (
-                          <span
-                            className={`event-severity event-${event.severity.toLowerCase()}`}
-                          >
-                            {event.severity}
-                          </span>
-                        )}
-                      </div>
-
-                      {typeof event.timestamp === 'string' && (
-                        <div className="event-card-details">
-                          <div>
-                            <span className="event-field-label">
-                              Timestamp
-                            </span>
-
-                            <strong>
-                              {new Date(
-                                event.timestamp,
-                              ).toLocaleString()}
-                            </strong>
-                          </div>
-
-                          <div>
-                            <span className="event-field-label">
-                              Source
-                            </span>
-
-                            <strong>AI Analytics</strong>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </article>
-                ))}
+                          </td>
+                          <td className="text-muted">AI Inference Engine</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </section>
+            </div>
+          </div>
         </>
       )}
     </div>

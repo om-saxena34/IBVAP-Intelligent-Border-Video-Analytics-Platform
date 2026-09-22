@@ -44,6 +44,7 @@ class GroupMovementDetector:
         ]
 
         groups = []
+        seen_clusters: set[frozenset[int]] = set()
 
         for detection in tracked:
             center = self._center(detection)
@@ -67,13 +68,16 @@ class GroupMovementDetector:
             }
 
             if len(unique_ids) >= self.minimum_group_size:
-                groups.append(
-                    {
-                        "type": "group_movement",
-                        "track_ids": sorted(unique_ids),
-                        "size": len(unique_ids),
-                    }
-                )
+                cluster_key = frozenset(unique_ids)
+                if cluster_key not in seen_clusters:
+                    seen_clusters.add(cluster_key)
+                    groups.append(
+                        {
+                            "type": "group_movement",
+                            "track_ids": sorted(unique_ids),
+                            "size": len(unique_ids),
+                        }
+                    )
 
         return groups
     

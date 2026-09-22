@@ -38,7 +38,7 @@ export default function PlaceholderView({
           <div className="development-notice-box">
             <span className="dev-icon">🛡</span>
             <div>
-              <strong>SIH 2026 Architectural Compliance</strong>
+              <strong>Platform Integrity &amp; Architectural Standards</strong>
               <p>
                 In accordance with project integrity requirements, mock metrics, fake logs,
                 and simulated counts are not displayed on this dashboard. This interface will

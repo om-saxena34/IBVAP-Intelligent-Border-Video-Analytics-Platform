@@ -355,7 +355,7 @@ class StreamWorker:
             }
 
     def generate_mjpeg_stream(self, annotated: bool = True, target_fps: int = 25):
-        """Yield multipart MJPEG stream frames for live browser rendering."""
+        """Yield multipart MJPEG stream frames for live browser rendering (synchronous generator)."""
         frame_delay = 1.0 / max(1, min(60, target_fps))
         while not self._stop_event.is_set():
             jpeg = (
@@ -369,6 +369,26 @@ class StreamWorker:
                     b"Content-Type: image/jpeg\r\n\r\n" + jpeg + b"\r\n"
                 )
             self._stop_event.wait(frame_delay)
+
+    async def generate_mjpeg_stream_async(self, annotated: bool = True, target_fps: int = 25):
+        """Yield multipart MJPEG stream frames asynchronously without blocking the event loop."""
+        import asyncio
+        frame_delay = 1.0 / max(1, min(60, target_fps))
+        while not self._stop_event.is_set():
+            jpeg = (
+                self.get_latest_annotated_frame_jpeg(quality=80)
+                if annotated
+                else self.get_latest_frame_jpeg(quality=80)
+            )
+            if jpeg:
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n\r\n" + jpeg + b"\r\n"
+                )
+            try:
+                await asyncio.sleep(frame_delay)
+            except asyncio.CancelledError:
+                break
 
     def update_zones(
         self,

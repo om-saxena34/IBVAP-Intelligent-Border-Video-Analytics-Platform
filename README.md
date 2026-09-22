@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x%20%2F%206.x-3178C6.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8.x-646CFF.svg)](https://vitejs.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Hackathon: SIH 2026](https://img.shields.io/badge/SIH%202026-Problem%20SIH26187-orange.svg)](#smart-india-hackathon-sih-2026)
+[![UI Concept: FORGE COMMAND](https://img.shields.io/badge/UI%2FUX-FORGE%20COMMAND-9F4032.svg)](#forge-command-frontend-architecture)
 
 ---
 
@@ -33,7 +33,7 @@
   - [8. Automatic Number Plate Recognition (ANPR)](#8-automatic-number-plate-recognition-anpr)
   - [9. Multi-Signal Suspicious Activity Scoring](#9-multi-signal-suspicious-activity-scoring)
 - [Alert & Event Dispatch System](#alert--event-dispatch-system)
-- [Surveillance Dashboard (Frontend)](#surveillance-dashboard-frontend)
+- [FORGE COMMAND Frontend Architecture](#forge-command-frontend-architecture)
 - [Camera & Stream Ingestion Support](#camera--stream-ingestion-support)
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
@@ -45,7 +45,7 @@
 - [Differentiation from Conventional Surveillance](#differentiation-from-conventional-surveillance)
 - [Limitations](#limitations)
 - [Future Enhancements](#future-enhancements)
-- [Smart India Hackathon (SIH) 2026](#smart-india-hackathon-sih-2026)
+- [Authors & Project Background](#authors--project-background)
 - [License](#license)
   - [Project-Use Note & Operational Disclaimer](#project-use-note--operational-disclaimer)
   - [Repository Usage & Attribution](#repository-usage--attribution)
@@ -350,35 +350,59 @@ Analytics Detector → Analytics Event Bridge → EventService → AlertService 
 
 ---
 
-## Surveillance Dashboard (Frontend)
+## FORGE COMMAND Frontend Architecture
 
-The frontend is a responsive web application built with **React 19**, **TypeScript**, and **Vite**, featuring a dark command-center aesthetic tailored for surveillance control rooms.
+The frontend has been completely redesigned with a bespoke, dark industrial intelligence interface titled **"FORGE COMMAND"**. Moving away from generic AI-generated admin dashboards, FORGE COMMAND combines the functional austerity of military-grade information hierarchy with the fluid usability of a state-of-the-art surveillance operations center.
 
-### Implemented Pages & Views
+### Visual Identity & Color System
 
-| Page / Section | Route | Purpose & Operational Features |
+The interface adheres to an intentional, restrained chromatic hierarchy:
+- **Deep Charcoal & Warm Black** (`#111111`, `#171513`): Base background surfaces eliminating eye fatigue in 24/7 dark control rooms.
+- **Dark Graphite & Raised Surface** (`#20201D`, `#242220`): Structural containment panels, HUD borders, and data matrices.
+- **Brand Rust & Burnt Orange** (`#9F4032`, `#C76B3C`): Primary visual identity, mission callsigns, and active operational highlights.
+- **Muted Copper** (`#A66A4C`): Technical identifiers, camera node IDs, and coordinate parameters.
+- **Warm Cream & Bright Off-White** (`#E9E0D2`, `#FFFFFF`): High-legibility typography for primary readings and metrics.
+- **Warning Amber & Critical Red** (`#D6A64A`, `#D9534F`): Strictly reserved for threat escalation, rule violations, and system alerts.
+- **Muted Green** (`#6E9B7B`): Reserved exclusively for healthy, operational telemetry beacons.
+
+### Navigation & Command Ergonomics
+
+1. **Compact Navigation Rail (`NavigationRail.tsx`)**:
+   - Slim vertical rail with collapsible expansion on hover or manual toggle.
+   - Features tactical three-letter callsign codes (`OVW`, `OPS`, `NOD`, `INT`, `ZON`, `ALT`, `EVT`, `SYS`, `SET`).
+   - Dynamic real-time badges indicating active alert counts and online camera node counts.
+2. **Contextual Top Command Bar (`CommandBar.tsx`)**:
+   - Displays real-time dual mission clocks: **Local Station Time** and **UTC Synchronization**.
+   - Sector station callsign indicator (`FORGE / C2-MONITOR // SECTOR-01`).
+   - Persistent FastAPI gateway health beacon with single-click manual sync.
+   - Global quick command search palette trigger (`⌘K` / `Ctrl+K`).
+3. **Mission Command Palette (`CommandPalette.tsx`)**:
+   - Modal palette accessible globally via `Ctrl+K` or `Cmd+K`.
+   - Keyboard arrow navigation and Enter execution for jumping across surveillance stations or triggering camera deployment.
+
+### Redesigned Operational Pages
+
+| Station / View | Route | Operational Capability |
 | :--- | :--- | :--- |
-| **Dashboard** | `/` | Operational overview with high-level KPI cards (Active Cameras, Alerts, Total Events, Persons & Vehicles detected), camera preview grid, quick connection shortcuts, and recent activity logs. |
-| **Live Surveillance** | `/surveillance` | Primary tactical monitoring workstation. Features an interactive camera selector, live annotated MJPEG stream player, detection toggle controls, real-time telemetry counters, active perimeter alerts, and snapshot capture. |
-| **Live Cameras** | `/cameras` | Multi-camera management grid displaying live cards for all registered streams, connection status badges, frame rate counters, dropped frame metrics, and connect/disconnect controls. |
-| **Security Alerts** | `/alerts` | Dedicated incident management center. Displays active and resolved alerts with severity badges (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`), camera origin, timestamp, detection details, and one-click alert resolution. |
-| **Event Audit Trail** | `/events` | Comprehensive chronological event ledger logging every detected rule trigger, fence crossing, zone breach, and loitering occurrence with filtering by camera and severity. |
-| **Zones & Fences** | `/zones` | Boundary configuration interface allowing operators to view and update virtual fence lines (tripwires) and restricted polygon coordinates per camera. |
-| **System Health** | `/health` | Diagnostic console tracking platform status, backend uptime, active camera threads, dropped frames, reconnect attempts, and worker status. |
-| **Analytics Summary** | `/analytics` | Aggregated intelligence metrics, breakdown of detected entities (persons vs. vehicles), threat level distributions, and event severity charts. |
-| **Settings** | `/settings` | Platform runtime configuration displaying backend API base URLs, polling frequencies, alert cooldown periods, and environment parameters. |
+| **Overview Dashboard** | `/` | Operational C2 command center. Features the **Sector Security Matrix** with active radar sweep visualization, live operational KPIs (Gateway Status, Active Streams, Threat Count, Detections), supporting modules for Active Threats, Node Health, and AI Detection Breakdown, plus an audit event stream. Zero invented or fake metrics. |
+| **Live Operations** | `/surveillance` | High-performance multi-camera surveillance workstation. Supports **1×1 Focus**, **1×2 Split**, **2×2 Quad**, and **3×2 Six-Up** grid layouts. Each camera tile streams independently with its own HUD reticle, FPS counter, threat score pill, AI overlay toggle, snapshot polling fallback mode, and error boundary. An offline or disconnected camera does not affect any other tile. |
+| **Camera Fleet Registry** | `/cameras` | Table/list hybrid management console. Features instant search across Node IDs, callsigns, and sectors, status filters, sorting by FPS or status, view mode toggle (Table vs. Cards), and direct controls to start/stop workers, edit zones, or decommission cameras. |
+| **Threat Incident Registry** | `/alerts` | Structured incident feed emphasizing visual hierarchy. Critical alarms are highlighted with deep rust/red borders, confidence scores, camera origins, and one-click **Acknowledge & Resolve** actions with live station telemetry. |
+| **Event Stream Audit** | `/events` | Real-time searchable event ledger tracking every boundary cross, loitering trigger, and AI detection with type filtering and simulated incident triggers. |
+| **Perimeter Zone Manager** | `/zones` | Precision coordinate calibration interface for virtual tripwire lines and restricted perimeter polygons with quick presets for sample CCTV footage. |
+| **Intelligence Analytics** | `/analytics` | Real telemetry aggregations from `/analytics/summary`, showing threat severity stratification, detection type breakdown, and event frequency distributions. |
+| **System Diagnostics** | `/health` | Ingestion thread health console tracking dropped frame counts, OpenCV capture workers, and gateway response latency. |
+| **Station Settings** | `/settings` | Operational preferences persisted to browser station memory, including telemetry polling intervals (1.2s to 5.0s), default viewport modes, AI overlay defaults, confidence score thresholds, and audible sirens. |
 
 ### Key UI Components
 
-- **`CameraCard.tsx`**: Individual stream card rendering live preview snapshots, status badges, resolution, real-time FPS, uptime, and control buttons.
-- **`CameraGrid.tsx`**: Responsive grid container organizing multi-camera feeds across monitoring sectors.
-- **`ConnectCameraModal.tsx`**: Modal dialog for onboarding new camera feeds—supports RTSP URLs, local MP4 file paths, and webcam device indices with location and sector tags.
-- **`VirtualFenceModal.tsx`**: Interactive modal for updating virtual fence coordinate pairs and restricted zone polygon vertices.
-- **`AlertPanel.tsx`**: Real-time floating/embedded notification panel highlighting high-severity perimeter alarms.
-- **`Sidebar.tsx`**: Navigation menu providing routing between all platform views and a global "Connect Camera" button.
-- **`Topbar.tsx`**: Command header displaying system branding, live backend connectivity indicator, manual refresh button, and quick-access controls.
-- **`StatusBadge.tsx`**: Semantic visual indicator reflecting stream lifecycle states (`ONLINE`, `OFFLINE`, `RECONNECTING`, `ERROR`).
-- **`StatCard.tsx`**: Metric display cards presenting counts of active cameras, alerts, events, and detected entities.
+- **`SurveillanceCameraTile.tsx`**: Isolated viewport module with independent MJPEG streaming, snapshot fallback polling (1.5s), HUD corner reticles, fullscreen trigger, and error recovery.
+- **`NavigationRail.tsx`**: Ergonomic vertical rail with status pips, active badges, and mission code glyphs.
+- **`CommandBar.tsx`**: Persistent mission bar with dual UTC/Local clocks, station status, and search trigger.
+- **`CommandPalette.tsx`**: Keyboard-navigable quick command launcher (`Ctrl+K`).
+- **`ConnectCameraModal.tsx`**: Multi-protocol connection dialog featuring an 8-item sample CCTV preset gallery and drag-and-drop file upload.
+- **`StatusBadge.tsx`**: Semantic visual status indicator (`ONLINE`, `OFFLINE`, `RECONNECTING`, `ERROR`).
+- **`VirtualFenceModal.tsx`**: Interactive modal for calibrating tripwire line vectors and polygon coordinates.
 
 ---
 
@@ -729,7 +753,7 @@ In video analytics and computer vision systems, actual operational throughput an
 - **License Plate Readability (ANPR)**: Automatic Number Plate Recognition relies on adequate pixel resolution, readable camera angles, and sufficient illumination; highly degraded, obscured, or non-standard plates may yield partial or absent readings.
 - **Rule-Based Behavioral Inference**: Suspicious activity scoring uses multi-signal heuristic rules and trajectory vectors; it does not replace human operational judgement in complex tactical scenarios.
 - **Resource Constraints on CPU**: Running multiple simultaneous camera feeds with deep learning models on entry-level CPU-only hardware will experience reduced effective analytics frame rates.
-- **Prototype Implementation**: The current software release is an evaluated research prototype designed for demonstration, hackathon evaluation, and pilot deployments; production mission-critical deployments require distributed cluster scaling, database persistence, and hardware-accelerated edge gateways.
+- **Prototype Implementation**: The current software release is an evaluated research prototype designed for demonstration, technical evaluation, and field pilot deployments; production mission-critical deployments require distributed cluster scaling, database persistence, and hardware-accelerated edge gateways.
 
 ---
 
@@ -746,13 +770,15 @@ In video analytics and computer vision systems, actual operational throughput an
 
 ---
 
-## Smart India Hackathon (SIH) 2026
+## Authors & Project Background
 
-- **Initiative**: Smart India Hackathon 2026 (Software Edition)
-- **Problem Statement ID**: `SIH26187`
-- **Problem Title**: AI-Based Intelligent Video Analytics Platform for Border Surveillance using existing CCTV infrastructure
-- **Sponsoring Organization**: Ministry of Home Affairs (MHA)
-- **Category**: Software / AI / Computer Vision / Homeland Security
+**IBVAP (Intelligent Border Video Analytics Platform)** was conceptualized, designed, and developed by **Om Saxena** and fellow engineering collaborators as a next-generation software-defined intelligence platform for border perimeter defense.
+
+The system was engineered to demonstrate that modern computer vision pipelines (YOLOv8 + ByteTrack) paired with an asynchronous FastAPI streaming engine and a bespoke mission-control interface can transform legacy, non-AI CCTV cameras into an active, multi-camera tactical surveillance grid without requiring expensive proprietary hardware replacements.
+
+### Core Development Team
+- **Om Saxena** — Project Lead, AI/ML Pipeline & Full-Stack Architecture
+- **Engineering Collaborators** — Computer Vision Analytics, Motion UI Design, & Quality Assurance
 
 ---
 
@@ -796,7 +822,7 @@ SOFTWARE.
 
 Under the MIT License:
 - Developers, researchers, and evaluators are free to inspect, clone, branch, and experiment with the codebase locally.
-- You are welcome to adapt the algorithms, user interface components, and analytical pipelines for academic research, hackathons, and technical evaluations.
+- You are welcome to adapt the algorithms, user interface components, and analytical pipelines for academic research, portfolio demonstrations, and technical evaluations.
 - Please retain the copyright notice and license text in derived distributions.
 
 ### Third-Party Software & Dependencies

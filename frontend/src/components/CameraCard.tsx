@@ -29,12 +29,23 @@ export default function CameraCard({
 }: CameraCardProps) {
   const navigate = useNavigate();
   const [isAnnotated, setIsAnnotated] = useState<boolean>(true);
+  const [streamMode, setStreamMode] = useState<'snapshot' | 'live'>('snapshot');
   const [isDisconnecting, setIsDisconnecting] = useState<boolean>(false);
   const [streamError, setStreamError] = useState<boolean>(false);
   const [telemetry, setTelemetry] = useState<StreamTelemetry | null>(null);
   const [streamKey, setStreamKey] = useState<number>(Date.now());
+  const [snapshotKey, setSnapshotKey] = useState<number>(Date.now());
 
   const isOnline = stream.status === 'ONLINE';
+
+  // In snapshot mode, poll snapshot periodically to avoid holding continuous HTTP sockets
+  useEffect(() => {
+    if (!isOnline || streamMode !== 'snapshot') return;
+    const interval = setInterval(() => {
+      setSnapshotKey(Date.now());
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [isOnline, streamMode]);
 
   // Poll detections telemetry when stream is ONLINE
   useEffect(() => {
@@ -93,7 +104,9 @@ export default function CameraCard({
     }
   }, [stream.camera_id, onDisconnected, onError]);
 
-  const liveUrl = `${streamsApi.getLiveStreamUrl(stream.camera_id, isAnnotated)}&_t=${streamKey}`;
+  const feedUrl = streamMode === 'live'
+    ? `${streamsApi.getLiveStreamUrl(stream.camera_id, isAnnotated)}&_t=${streamKey}`
+    : `${streamsApi.getSnapshotSrc(stream.camera_id, isAnnotated)}&_t=${snapshotKey}`;
 
   const threatLevel = telemetry?.threat_level || 'NORMAL';
   const threatScore = telemetry?.threat_score ?? 0;
@@ -154,8 +167,8 @@ export default function CameraCard({
         {isOnline && !streamError ? (
           <div className="snapshot-wrapper">
             <img
-              src={liveUrl}
-              alt={`Live video stream from ${stream.camera_id}`}
+              src={feedUrl}
+              alt={`Video feed from ${stream.camera_id}`}
               className="snapshot-image live-stream-feed"
               onError={() => {
                 setStreamError(true);
@@ -165,7 +178,9 @@ export default function CameraCard({
             {/* Tactical Live Stream HUD Overlay */}
             <div className="viewport-overlay">
               <div className="overlay-left">
-                <span className="overlay-live">● LIVE FEED</span>
+                <span className="overlay-live">
+                  {streamMode === 'live' ? '● LIVE MJPEG' : '● SNAPSHOT'}
+                </span>
                 {isAnnotated && (
                   <span className="overlay-hud-tag font-mono">AI HUD ON</span>
                 )}
@@ -188,6 +203,14 @@ export default function CameraCard({
             <div className="viewport-quick-actions">
               <button
                 type="button"
+                className={`btn btn-xs ${streamMode === 'live' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setStreamMode(streamMode === 'live' ? 'snapshot' : 'live')}
+                title={streamMode === 'live' ? 'Switch to low-overhead snapshot mode' : 'Switch to continuous live MJPEG stream'}
+              >
+                {streamMode === 'live' ? '⚡ Live Active' : '▶ Go Live'}
+              </button>
+              <button
+                type="button"
                 className={`btn btn-xs ${isAnnotated ? 'btn-danger-subtle' : 'btn-secondary'}`}
                 onClick={() => setIsAnnotated(!isAnnotated)}
                 title="Toggle tactical AI detection overlay"
@@ -197,10 +220,13 @@ export default function CameraCard({
               <button
                 type="button"
                 className="btn btn-xs btn-secondary"
-                onClick={() => setStreamKey(Date.now())}
-                title="Refresh stream feed"
+                onClick={() => {
+                  setStreamKey(Date.now());
+                  setSnapshotKey(Date.now());
+                }}
+                title="Refresh feed"
               >
-                ↻ Refresh
+                ↻
               </button>
             </div>
           </div>

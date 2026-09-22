@@ -42,8 +42,8 @@ app = FastAPI(
     title=settings.API_TITLE,
     version=settings.API_VERSION,
     description=(
-        "AI-Based Intelligent Video Analytics Platform for Border Surveillance "
-        "using existing CCTV infrastructure. SIH 2026 Problem Statement."
+        "AI-Based Intelligent Video Analytics Platform for Border Surveillance, "
+        "Intrusion Detection, and Multi-Camera Tactical Command."
     ),
     lifespan=lifespan,
 )

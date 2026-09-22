@@ -37,9 +37,14 @@ class WrongDirectionDetector:
     ) -> list[dict]:
         events = []
 
+        active_ids = set()
+
         for detection in detections:
             if detection.track_id is None:
                 continue
+
+            track_id = detection.track_id
+            active_ids.add(track_id)
 
             center = (
                 (
@@ -54,14 +59,13 @@ class WrongDirectionDetector:
                 // 2,
             )
 
-            previous = self.previous.get(
-                detection.track_id
-            )
+            previous = self.previous.get(track_id)
 
-            if previous is not None:
+            if previous is None:
+                self.previous[track_id] = center
+            else:
                 dx = center[0] - previous[0]
                 dy = center[1] - previous[1]
-
                 distance = math.hypot(dx, dy)
 
                 if distance >= self.minimum_distance:
@@ -79,13 +83,17 @@ class WrongDirectionDetector:
                         events.append(
                             {
                                 "type": "wrong_direction",
-                                "track_id": detection.track_id,
+                                "track_id": track_id,
                                 "class": detection.class_name,
                             }
                         )
 
-            self.previous[
-                detection.track_id
-            ] = center
+                    # Update anchor once minimum distance has been observed
+                    self.previous[track_id] = center
+
+        # Prune stale tracks that disappeared
+        stale_ids = set(self.previous.keys()) - active_ids
+        for tid in stale_ids:
+            self.previous.pop(tid, None)
 
         return events
