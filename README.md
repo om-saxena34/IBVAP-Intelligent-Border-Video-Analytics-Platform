@@ -1,790 +1,695 @@
-# AI-Based Intelligent Video Analytics Platform for Border Surveillance Using Existing CCTV Infrastructure
+# IBVAP — Intelligent Border Video Analytics Platform
 
-### Short Name: IBVAP — Intelligent Border Video Analytics Platform
+### AI-Based Video Analytics and Tactical Perimeter Surveillance Platform
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-Headless%204.10-5C3EE8.svg)](https://opencv.org/)
-[![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-00FFFF.svg)](https://docs.ultralytics.com/)
+[![Ultralytics YOLO](https://img.shields.io/badge/YOLO-Ultralytics%20YOLOv8%20%2F%20YOLO11-00FFFF.svg)](https://docs.ultralytics.com/)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x%20%2F%206.x-3178C6.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8.x-646CFF.svg)](https://vitejs.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![UI Concept: FORGE COMMAND](https://img.shields.io/badge/UI%2FUX-FORGE%20COMMAND-9F4032.svg)](#forge-command-frontend-architecture)
+[![UI Concept: FORGE COMMAND](https://img.shields.io/badge/UI%2FUX-FORGE%20COMMAND-9F4032.svg)](#14-frontend-capabilities)
 
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Problem Statement](#problem-statement)
-- [Objectives](#objectives)
-- [Key Features](#key-features)
-- [System Architecture](#system-architecture)
-- [AI/ML & Computer Vision Pipeline](#aiml--computer-vision-pipeline)
-- [Security Analytics Modules](#security-analytics-modules)
-  - [1. Virtual Fence / Tripwire Detection](#1-virtual-fence--tripwire-detection)
-  - [2. Restricted Zone Entry Detection](#2-restricted-zone-entry-detection)
-  - [3. Loitering Detection](#3-loitering-detection)
-  - [4. Wrong-Direction Movement Detection](#4-wrong-direction-movement-detection)
-  - [5. Group Movement Detection](#5-group-movement-detection)
-  - [6. Night-Time Movement Detection](#6-night-time-movement-detection)
-  - [7. Face Detection](#7-face-detection)
-  - [8. Automatic Number Plate Recognition (ANPR)](#8-automatic-number-plate-recognition-anpr)
-  - [9. Multi-Signal Suspicious Activity Scoring](#9-multi-signal-suspicious-activity-scoring)
-- [Alert & Event Dispatch System](#alert--event-dispatch-system)
-- [FORGE COMMAND Frontend Architecture](#forge-command-frontend-architecture)
-- [Camera & Stream Ingestion Support](#camera--stream-ingestion-support)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Installation & Setup](#installation--setup)
-- [Running the Application](#running-the-application)
-- [REST API Reference](#rest-api-reference)
-- [Testing with Sample CCTV Videos](#testing-with-sample-cctv-videos)
-- [Performance Considerations](#performance-considerations)
-- [Differentiation from Conventional Surveillance](#differentiation-from-conventional-surveillance)
-- [Limitations](#limitations)
-- [Future Enhancements](#future-enhancements)
-- [Authors & Project Background](#authors--project-background)
-- [License](#license)
+- [1. Project Title](#1-project-title)
+- [2. Short Description](#2-short-description)
+- [3. Project Status / Development Status](#3-project-status--development-status)
+- [4. Overview](#4-overview)
+- [5. Problem Statement](#5-problem-statement)
+- [6. Objectives](#6-objectives)
+- [7. What Is Currently Implemented](#7-what-is-currently-implemented)
+- [8. Partially Implemented / Experimental Features](#8-partially-implemented--experimental-features)
+- [9. Planned Future Integrations](#9-planned-future-integrations)
+- [10. Current System Architecture](#10-current-system-architecture)
+- [11. Current AI/Computer Vision Pipeline](#11-current-aicomputer-vision-pipeline)
+- [12. Implemented Analytics Modules](#12-implemented-analytics-modules)
+- [13. Backend and API Capabilities](#13-backend-and-api-capabilities)
+- [14. Frontend Capabilities](#14-frontend-capabilities)
+- [15. Technology Stack](#15-technology-stack)
+- [16. Project Structure](#16-project-structure)
+- [17. Installation and Setup](#17-installation-and-setup)
+- [18. Running the Application](#18-running-the-application)
+- [19. API Reference](#19-api-reference)
+- [20. Testing](#20-testing)
+- [21. Sample CCTV Video Usage](#21-sample-cctv-video-usage)
+- [22. Current Limitations](#22-current-limitations)
+- [23. Future Roadmap](#23-future-roadmap)
+- [24. Project Ownership and Development Note](#24-project-ownership-and-development-note)
+- [25. License](#25-license)
   - [Project-Use Note & Operational Disclaimer](#project-use-note--operational-disclaimer)
   - [Repository Usage & Attribution](#repository-usage--attribution)
   - [Third-Party Software & Dependencies](#third-party-software--dependencies)
+- [26. Disclaimer](#26-disclaimer)
 
 ---
 
-## Overview
+## 1. Project Title
 
-**IBVAP (Intelligent Border Video Analytics Platform)** is an AI-powered surveillance platform designed to upgrade existing CCTV and IP camera infrastructure into an intelligent, automated perimeter defense system.
-
-Border Outposts (BOPs), check posts, access roads, and forward defense locations often deploy hundreds of standard optical and infrared CCTV cameras. Traditional surveillance setups rely on continuous human operator monitoring across multiple video walls—a model prone to operator fatigue, missed incursions, and delayed reaction times. Replacing legacy camera networks with dedicated proprietary "smart cameras" is prohibitively expensive, operationally disruptive, and creates vendor lock-in.
-
-IBVAP addresses this challenge through a **software-defined intelligence layer**. By ingesting standard RTSP IP camera streams, local video files, or test feeds, the platform performs real-time computer vision analysis, multi-object tracking, behavioral rule evaluation, and automated threat dispatching without requiring specialized camera hardware.
+**IBVAP — Intelligent Border Video Analytics Platform**
 
 ---
 
-## Problem Statement
+## 2. Short Description
 
-Border security agencies operate extensive networks of existing IP-based CCTV cameras along international frontiers and sensitive installations. However:
-1. **Passive Recording**: Legacy cameras merely record video footage for post-incident forensic investigation rather than providing proactive real-time detection.
-2. **Cognitive Overload**: Human operators cannot monitor multiple camera feeds simultaneously for prolonged shifts without significant drops in attention.
-3. **Hardware Replacement Costs**: Discarding functioning camera infrastructure to install proprietary edge-AI cameras requires massive capital expenditure and logistical downtime.
-4. **Disjointed Analytics**: Off-the-shelf point solutions rarely combine object detection, multi-object tracking, perimeter tripwires, restricted polygons, loitering detection, direction verification, ANPR, and composite threat scoring into a unified operator dashboard.
-
-IBVAP converts existing IP-based CCTV cameras into an intelligent surveillance system using AI/ML and computer vision, operating directly on standard video feeds.
+**IBVAP** is an AI-powered surveillance and video analytics platform engineered to convert legacy, non-AI IP CCTV infrastructure into an active, automated perimeter intrusion detection system. Combining deep-learning object detection (YOLO) and multi-object tracking (ByteTrack) with rule-based behavioral heuristics (tripwires, restricted zones, loitering, wrong-direction, group movement, and night movement) and an industrial command interface (**FORGE COMMAND**), IBVAP provides real-time threat detection, multi-stream ingestion, and operational incident triage without requiring expensive proprietary smart cameras.
 
 ---
 
-## Objectives
+## 3. Project Status / Development Status
 
-- **Maximize Existing Infrastructure**: Integrate with standard IP cameras (via RTSP), USB/webcam inputs, and recorded video archives without hardware replacement.
-- **Automated Real-Time Detection**: Detect, classify, and track security-relevant entities (persons, vehicles, bicycles, motorcycles, buses, trucks) in real time.
-- **Configurable Perimeter Intelligence**: Provide operators with interactive tools to define virtual fence lines (tripwires) and polygonal restricted zones with customizable dwell and trajectory thresholds.
-- **Behavioral Anomaly Identification**: Identify abnormal behavioral patterns, including loitering, wrong-direction movement, group formations, and movement under low-light/night conditions.
-- **Composite Threat Scoring**: Correlate multiple low-level signals into an explainable threat level (Normal, Low, Medium, High, Critical) to eliminate alert fatigue.
-- **Unified Command Dashboard**: Present operators with live annotated MJPEG video streams, real-time alert triage, historical event logs, camera health telemetry, and diagnostic metrics.
-
----
-
-## Key Features
-
-1. **Real-Time Object Detection**: YOLOv8-powered detection of persons, vehicles, and relevant perimeter entities.
-2. **Person Detection**: Dedicated classification and tracking of pedestrians and individuals traversing monitored zones.
-3. **Vehicle Detection & Classification**: Identification of cars, motorcycles, buses, and trucks moving across border corridors and check posts.
-4. **Multi-Object Tracking (ByteTrack)**: Robust multi-object tracking associating stable track IDs across consecutive frames, even through partial occlusions.
-5. **Object Trajectory & ID Association**: Centroid trajectory calculation across temporal windows to analyze movement paths and heading vectors.
-6. **Virtual Fence / Tripwire Detection**: Vector-based line crossing detection across user-configured coordinate pairs.
-7. **Restricted-Zone Perimeter Intrusion**: Point-in-polygon algorithm (`cv2.pointPolygonTest`) to detect unauthorized entry into high-security zones.
-8. **Loitering Detection**: Dwell-time tracking that flags subjects remaining inside monitored sectors longer than a configured threshold.
-9. **Wrong-Direction Movement Detection**: Vector dot-product analysis comparing object velocity vectors against authorized movement vectors.
-10. **Group Movement Detection**: Spatial cluster analysis identifying coordinated movement of multiple subjects within defined proximity thresholds.
-11. **Night-Time Movement Detection**: Grayscale luminance evaluation detecting active movement under low-ambient-light conditions.
-12. **Face Detection**: Haar-cascade detection identifying human faces in near-field surveillance views.
-13. **ANPR (Automatic Number Plate Recognition)**: Crop-optimized EasyOCR pipeline extracting license plate alphanumeric text from detected vehicle bounding boxes with track-level caching.
-14. **Real-Time Security Alerts**: Automated escalation of High and Critical security events into prioritized operational alerts.
-15. **Event Logging & Audit Trail**: Thread-safe persistent event repository capturing camera origins, timestamps, bounding boxes, and detection details.
-16. **Alert Deduplication & Cooldown**: Time-windowed cooldown mechanism (5.0s default) suppressing duplicate alerts from consecutive video frames.
-17. **CCTV/IP Camera Stream Processing**: Non-blocking multi-threaded stream ingestion with automatic reconnect, exponential backoff, and frame-rate normalization.
-18. **Modern Command Dashboard**: Responsive React/TypeScript web interface for live surveillance, zone management, alert resolution, and health diagnostics.
+| Metric | Status |
+| :--- | :--- |
+| **Development Phase** | **Functional Proof-of-Concept Prototype (Phase 1 & Phase 2 Complete)** |
+| **Backend State** | Operational FastAPI service with multi-threaded stream ingestion, live MJPEG streaming, and analytics engine |
+| **Frontend State** | Fully operational React 19 + TypeScript + Vite surveillance command center (**FORGE COMMAND**) |
+| **Inference Models** | Ultralytics YOLO (`yolo11n.pt` / `yolov8n.pt`) + ByteTrack active; EasyOCR & Haar Cascades integrated |
+| **Persistence** | In-memory state (streams, events, alerts, zones) with local disk evidence capture (`evidence/`) |
+| **Authentication** | Planned / Open API (no user authentication or RBAC currently enforced) |
+| **Deployment** | Local workstation / development server (no Docker containerization or CI/CD pipelines currently configured) |
 
 ---
 
-## System Architecture
+## 4. Overview
 
-The following diagram illustrates the complete dataflow and processing pipeline from camera input to the operator dashboard:
+Border Outposts (BOPs), perimeter checkpoints, access corridors, and critical infrastructure installations rely heavily on networks of fixed optical and infrared CCTV cameras. Traditional surveillance relies almost exclusively on human operators continuously watching banks of video monitors. In high-density or prolonged shift environments, this manual monitoring model leads to attention fatigue, missed incursions, and delayed response times.
+
+Replacing operational camera installations with proprietary "smart cameras" involves massive capital expenditure, vendor lock-in, and operational disruption.
+
+**IBVAP** implements a **software-defined intelligence layer** that interfaces directly with existing camera streams via standard protocols (RTSP, video files, or USB webcams). The platform runs decoupled background ingestion threads, applies deep-learning detection and tracking, evaluates spatial and behavioral rules against user-configured perimeter geometry, calculates multi-signal risk scores, and streams annotated video and telemetry directly to an operator dashboard.
+
+---
+
+## 5. Problem Statement
+
+Border security agencies and perimeter facility operators face three persistent technical and operational bottlenecks:
+1. **Passive Forensics over Active Prevention**: Standard CCTV cameras record footage to Network Video Recorders (NVRs) for post-incident review rather than alerting operators during an active breach.
+2. **Operator Cognitive Overload**: Human operators cannot maintain continuous focus across multiple camera feeds simultaneously without experiencing cognitive fatigue and missed incursions.
+3. **Prohibitive Hardware Upgrade Costs**: Replacing working analog or standard IP cameras with proprietary edge-AI camera hardware requires substantial budget allocation and installation downtime.
+4. **Disjointed Analytics Solutions**: Existing commercial solutions often isolate object detection from behavioral tracking, zone calibration, and unified operator triage.
+
+IBVAP solves these challenges by ingesting existing video feeds into a centralized computer vision pipeline that automates perimeter boundary enforcement in real time.
+
+---
+
+## 6. Objectives
+
+- **Hardware Independence**: Process standard RTSP video streams from commodity CCTV cameras, local MP4/AVI surveillance archives, and USB capture inputs without proprietary hardware dependencies.
+- **Accurate Real-Time Detection**: Classify and track security-relevant entities (persons, vehicles, bicycles, motorcycles, buses, trucks) across consecutive frames.
+- **Configurable Spatial Geometry**: Provide operators with interactive coordinate calibration for virtual tripwire lines and restricted perimeter polygons.
+- **Behavioral Rule Automation**: Automate detection of loitering, wrong-direction movement, group gatherings, and movement during low-light night periods.
+- **Explainable Multi-Signal Risk Scoring**: Synthesize multiple disparate infractions into a 0–100 composite risk score to prevent alarm fatigue.
+- **Mission-Control Operator Experience**: Deliver a responsive, low-latency command dashboard (**FORGE COMMAND**) supporting multi-tile surveillance grids, real-time MJPEG streams, incident resolution, and diagnostics.
+
+---
+
+## 7. What Is Currently Implemented
+
+The following components are fully functional and verifiable in the project codebase:
+
+### Current Feature Status Table
+
+| Feature / Capability | Current Status | Codebase Evidence & Operational Notes |
+| :--- | :--- | :--- |
+| **CCTV / Video Ingestion** | **Implemented** | [`StreamWorker`](file:///backend/services/stream_worker.py) decodes RTSP streams, MP4 files (with looping), and webcams via OpenCV. Manages thread-safe ring buffering, dropped frame tracking, and automatic reconnection with exponential backoff. |
+| **Object Detection** | **Implemented** | [`YOLODetector`](file:///backend/inference/yolo_detector.py) utilizes Ultralytics YOLO (`yolo11n.pt` / `yolov8n.pt`) with confidence filtering across 7 target classes (`person`, `bicycle`, `car`, `motorcycle`, `bus`, `truck`, `train`). |
+| **Multi-Object Tracking** | **Implemented** | [`ObjectTracker`](file:///backend/inference/tracker.py) executes Ultralytics ByteTrack (`bytetrack.yaml`) with persistent track IDs and centroid trajectory tracking across frames. |
+| **Virtual Fence (Tripwire)** | **Implemented** | [`VirtualFence`](file:///backend/analytics/virtual_fence.py) tracks 2D vector cross-products of entity centroids across configured line segments `((x1, y1), (x2, y2))` and triggers `virtual_fence_crossing` events on sign changes. |
+| **Restricted Zone Detection** | **Implemented** | [`RestrictedZoneDetector`](file:///backend/analytics/restricted_zone.py) executes point-in-polygon tests (`cv2.pointPolygonTest`) to detect centroid intrusion into arbitrary polygonal boundaries. |
+| **Loitering Detection** | **Implemented** | [`LoiteringDetector`](file:///backend/analytics/loitering.py) monitors track dwell duration against a configurable threshold (e.g., 15s) with a 2.0s grace period for brief detection dropouts. |
+| **Wrong-Direction Movement** | **Implemented** | [`WrongDirectionDetector`](file:///backend/analytics/wrong_direction.py) computes vector dot-products between observed displacement ($\ge 5\text{ px}$) and an expected unit vector; triggers when dot product $< -0.5$. |
+| **Group Movement Detection** | **Implemented** | [`GroupMovementDetector`](file:///backend/analytics/group_movement.py) evaluates pairwise Euclidean distances between centroids; triggers when $\ge 3$ tracked entities cluster within $120\text{ px}$. |
+| **Night Movement Detection** | **Implemented** | [`NightMovementDetector`](file:///backend/analytics/night_movement.py) evaluates average grayscale frame luminance; triggers `night_movement` when brightness $< 60.0$ and moving tracks are observed. |
+| **Suspicious Activity Scoring** | **Implemented** | [`SuspiciousActivityScorer`](file:///backend/analytics/suspicious_activity.py) aggregates active behavioral signals into an explainable 0–100 risk score and mapped risk tier (`NORMAL`, `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`). |
+| **Live MJPEG Video Streaming** | **Implemented** | [`StreamWorker.generate_mjpeg_stream_async`](file:///backend/services/stream_worker.py) serves multipart JPEG streams (`/streams/{id}/live`) with real-time tactical bounding boxes, track labels, and HUD overlays. |
+| **Event & Alert Lifecycle** | **Implemented** | [`EventService`](file:///backend/services/event_service.py) logs events with 5.0s deduplication cooldown; automatically escalates `HIGH` and `CRITICAL` events to [`AlertService`](file:///backend/services/alert_service.py), supporting manual alert resolution. |
+| **Evidence Snapshot Capture** | **Implemented** | Stored to local disk in `evidence/` directory as timestamped JPEG files upon event trigger. |
+| **FORGE COMMAND Frontend** | **Implemented** | Full React 19 + TypeScript web application with 9 dedicated operational views, layout controls (1×1, 1×2, 2×2, 3×2), navigation rail, command bar, and `Ctrl+K` palette. |
+| **Automated Test Suite** | **Implemented** | 30 tests in [`tests/`](file:///tests/) passing via Pytest covering API routes, health, frame normalization, intelligence rules, and worker lifecycles. |
+
+---
+
+## 8. Partially Implemented / Experimental Features
+
+Certain modules exist in code and are operational in standalone or demo pipelines, but have recognized prototype boundaries:
+
+1. **Crop-Based ANPR (License Plate Recognition)**:
+   - **Current Status**: *Experimental Prototype*.
+   - **Code**: [`ANPR`](file:///backend/inference/anpr.py).
+   - **Implementation**: Uses EasyOCR (`en`) running strictly on cropped vehicle bounding boxes (lower 65% crop) with track-level caching to avoid per-frame re-computation.
+   - **Limitations**: Relies on general English OCR rather than a specialized license plate character model; sensitive to plate angle, camera resolution, motion blur, and illumination.
+2. **Face Detection**:
+   - **Current Status**: *Prototype Level*.
+   - **Code**: [`FaceDetector`](file:///backend/inference/face_detector.py).
+   - **Implementation**: Uses classic OpenCV Haar Feature-based Cascade Classifiers (`haarcascade_frontalface_default.xml`). Runs every 30 frames or when persons are in near-field view.
+   - **Limitations**: Detects facial presence only. Does **not** perform identity recognition, facial feature matching, embedding generation, or watchlist queries.
+3. **Suspicious Sequence Correlation**:
+   - **Current Status**: *Partially Implemented (Simulation-Oriented)*.
+   - **Code**: [`IntelligenceService.evaluate_movement`](file:///backend/services/intelligence_service.py) and `/intelligence/simulate`.
+   - **Implementation**: Evaluates temporal sequences of infractions (e.g., restricted zone entry followed by loitering) across simulated or tracked movement payloads within a 60-second window.
+4. **Zone Management Persistence**:
+   - **Current Status**: *In-Memory Runtime Configuration*.
+   - **Code**: [`zones.py`](file:///backend/api/zones.py) and [`StreamManager.update_camera_zones`](file:///backend/services/stream_manager.py).
+   - **Implementation**: Operators can update tripwire lines and restricted polygons dynamically via the UI or REST API. However, configurations are held in memory by active `StreamWorker` instances and reset to defaults upon server restart.
+5. **Station Settings**:
+   - **Current Status**: *Client-Side Persistence Only*.
+   - **Code**: [`SettingsPage.tsx`](file:///frontend/src/pages/SettingsPage.tsx).
+   - **Implementation**: Preferences (telemetry polling interval, default stream mode, AI overlay default, audible sirens, confidence threshold) are saved to browser `localStorage`. No server-side persistence exists.
+
+---
+
+## 9. Planned Future Integrations
+
+The following capabilities are **not yet implemented or integrated** in the current repository and represent planned roadmap items:
+
+| Feature to Integrate | Why It Is Useful | Target Module | Work Required | Timeline |
+| :--- | :--- | :--- | :--- | :--- |
+| **Persistent SQL / NoSQL Database** | Prevent data loss on backend restarts; enable long-term forensic search and audit compliance. | `backend/services/event_service.py`, `alert_service.py` | Add SQLAlchemy / Alembic migrations with PostgreSQL or SQLite backing store for camera configs, events, alerts, and zones. | Short-Term |
+| **User Authentication & RBAC** | Restrict camera controls, zone edits, and alert acknowledgments to authorized security personnel. | `backend/api/`, `frontend/src/` | Implement JWT authentication, password hashing (bcrypt), session tokens, and role-based permissions (Admin, Operator, Auditor). | Short-Term |
+| **WebSocket Telemetry Stream** | Eliminate periodic HTTP polling (currently every 3–5s) for events and alerts, reducing latency and network overhead. | `backend/api/`, `frontend/src/hooks/` | Implement FastAPI WebSocket route (`/ws/telemetry`) broadcasting live events and detections directly to subscribed browser clients. | Medium-Term |
+| **Specialized Deep-Learning ANPR** | Deliver high-accuracy license plate extraction across diverse formats, angles, and low-light environments. | `backend/inference/anpr.py` | Replace general EasyOCR with a dedicated plate-localization model (e.g., YOLO plate detector) paired with a fine-tuned CRNN/LPRNet OCR model. | Medium-Term |
+| **Thermal & Infrared (FLIR) Processing** | Enable robust perimeter monitoring in complete darkness, adverse weather, fog, and smoke. | `backend/services/frame_processor.py` | Add thermal palette normalization, adaptive histogram equalization (CLAHE), and models trained on thermal border datasets. | Medium-Term |
+| **Cross-Camera Re-Identification (Re-ID)** | Maintain unified track history of individuals and vehicles as they transition across non-overlapping camera fields of view. | `backend/inference/tracker.py`, `backend/services/` | Integrate deep appearance feature extractor (e.g., OSNet) with cosine similarity vector matching across camera boundaries. | Long-Term |
+| **Automated Field Notifications** | Instantly alert rapid response teams and field patrols during Critical perimeter breaches. | `backend/services/alert_service.py` | Implement webhook dispatchers supporting Telegram, Slack, SMS gateways, and secure SMTP email notifications. | Medium-Term |
+| **Docker & Edge Deployment Packages** | Provide reproducible containerized deployments for edge servers and multi-node clusters. | Root repository | Create multi-stage `Dockerfile`, `docker-compose.yml` with NVIDIA runtime GPU passthrough support, and deployment guides. | Short-Term |
+
+---
+
+## 10. Current System Architecture
+
+IBVAP uses a multi-threaded asynchronous architecture separating video stream ingestion from heavy computer vision inference:
 
 ```
-IP Camera / RTSP stream OR uploaded CCTV video
-        ↓
-Video Stream Manager
-        ↓
-OpenCV Frame Processing
-        ↓
-YOLOv8 Object Detection
-        ↓
-ByteTrack Object Tracking
-        ↓
-Analytics Engine
-        ↓
- ┌─────────────────────────────┐
- │ Virtual Fence               │
- │ Restricted Zone             │
- │ Loitering                   │
- │ Wrong Direction             │
- │ Group Movement              │
- │ Night Movement              │
- │ Suspicious Activity         │
- │ Face Detection              │
- │ ANPR                        │
- └─────────────────────────────┘
-        ↓
-Event / Alert Dispatcher
-        ↓
-FastAPI Backend
-        ↓
-React Surveillance Dashboard
+┌────────────────────────────────────────────────────────────────────────┐
+│                        VIDEO INGESTION LAYER                           │
+│  RTSP IP CCTV Feeds  │  Local Surveillance MP4s  │  USB / Webcams      │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                     STREAM WORKER (Per-Camera Thread)                  │
+│  - OpenCV VideoCapture Ingestion                                       │
+│  - Reconnect & Exponential Backoff Supervisor                          │
+│  - Circular Ring Buffer (Max 10 Frames)                                │
+│  - Real-Time FPS & Dropped Frame Calculation                           │
+└───────────────────┬────────────────────────────────┬───────────────────┘
+                    │                                │
+                    ▼                                ▼
+       ┌─────────────────────────┐      ┌─────────────────────────┐
+       │   CAPTURE THREAD        │      │   ANALYTICS THREAD      │
+       │   Continuous 25-30 FPS  │      │   Periodic 5 Hz Loop    │
+       └─────────────────────────┘      └────────────┬────────────┘
+                                                     │
+                                                     ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                      AI & ANALYTICS PIPELINE                           │
+│  - Frame Normalization (FrameProcessor)                                │
+│  - YOLOv8 / YOLO11 Inference (Ultralytics)                             │
+│  - ByteTrack Multi-Object Tracking (Persistent Track IDs)              │
+│  - Spatial & Behavioral Rules Engine:                                  │
+│    • Virtual Fence (Tripwire Cross-Product)                            │
+│    • Restricted Zone (Point-in-Polygon Test)                           │
+│    • Loitering Detector (Dwell-Time Monitoring)                        │
+│    • Wrong Direction Detector (Vector Dot-Product)                     │
+│    • Group Movement Detector (Spatial Centroid Clustering)             │
+│    • Night Movement Detector (Mean Grayscale Luminance)                │
+│    • Face Presence Detector (Haar Cascade)                             │
+│    • Vehicle Crop ANPR (EasyOCR)                                       │
+│    • Suspicious Activity Scorer (Composite 0-100 Score)                │
+│  - Tactical HUD Annotation Generation                                  │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                     EVENT & ALERT DISPATCH LAYER                       │
+│  - Analytics Event Bridge (Normalization)                              │
+│  - EventService (5.0s Cooldown Deduplication, In-Memory)               │
+│  - AlertService (HIGH / CRITICAL Escalation, Manual Resolution)        │
+│  - Evidence Snapshot Storage (JPEG to evidence/ Directory)             │
+└───────────────────┬────────────────────────────────┬───────────────────┘
+                    │                                │
+                    ▼                                ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────────┐
+│       FASTAPI REST & STREAMING       │  │    FORGE COMMAND FRONTEND    │
+│  - /streams (Connect, Health, Live)  │  │  - React 19 + TypeScript     │
+│  - /events & /alerts                 │  │  - Multi-Tile Surveillance   │
+│  - /intelligence/zones               │  │  - Zone Calibration Modal    │
+│  - /analytics/summary                │  │  - Incident Triage Table     │
+└──────────────────────────────────────┘  └──────────────────────────────┘
 ```
-
-### Architecture Data Flow Details
-
-```mermaid
-flowchart TD
-    subgraph Inputs["Video Sources (Existing Infrastructure)"]
-        RTSP["RTSP IP Cameras"]
-        MP4["Uploaded CCTV Videos / MP4"]
-        WEBCAM["USB / Local Webcams"]
-    end
-
-    subgraph Ingestion["Stream Ingestion Layer"]
-        SM["StreamManager\n(Lifecycle & Registry)"]
-        SW["StreamWorker Threads\n(Decoupled Ingestion & Health)"]
-        FP["FrameProcessor\n(Normalization & Ring Buffering)"]
-    end
-
-    subgraph Inference["AI / CV Inference Pipeline"]
-        YOLO["YOLOv8 Detector\n(Person & Vehicle Classes)"]
-        BT["ByteTrack Tracker\n(Persistent Track IDs)"]
-        FACE["Face Detector\n(Haar Cascade)"]
-        OCR["Crop-Optimized ANPR\n(EasyOCR Engine)"]
-    end
-
-    subgraph Analytics["Security Analytics Engine"]
-        VF["Virtual Fence\n(Line Intersection)"]
-        RZ["Restricted Zone\n(Point-in-Polygon)"]
-        LT["Loitering Detector\n(Dwell-Time Tracking)"]
-        WD["Wrong Direction\n(Vector Dot-Product)"]
-        GM["Group Movement\n(Spatial Clustering)"]
-        NM["Night Movement\n(Luminance Analysis)"]
-        SC["Suspicious Activity Scorer\n(Composite Scoring: 0-100)"]
-    end
-
-    subgraph Dispatch["Event & Alert Dispatch Layer"]
-        BRIDGE["Analytics Event Bridge"]
-        ES["EventService\n(5s Cooldown Deduplication)"]
-        AS["AlertService\n(Severity-Based Escalation)"]
-    end
-
-    subgraph Interface["FastAPI REST & Streaming Layer"]
-        REST["REST Endpoints\n(/streams, /events, /alerts, /zones)"]
-        MJPEG["MJPEG Video Stream\n(Real-Time Annotated Frames)"]
-    end
-
-    subgraph UI["Command Center Frontend"]
-        DASH["React 19 + TypeScript Dashboard"]
-    end
-
-    Inputs --> SM
-    SM --> SW
-    SW --> FP
-    FP --> YOLO
-    YOLO --> BT
-    BT --> Analytics
-    FP --> FACE
-    BT --> OCR
-    Analytics --> BRIDGE
-    FACE --> BRIDGE
-    OCR --> BRIDGE
-    BRIDGE --> ES
-    ES -->|HIGH / CRITICAL| AS
-    ES --> REST
-    AS --> REST
-    SW --> MJPEG
-    REST --> DASH
-    MJPEG --> DASH
-```
-
-### Key Architectural Tenet: Decoupled Ingestion & Inference
-A central design principle of IBVAP is that **video frame acquisition and AI analytics execution are strictly decoupled onto separate threads**:
-- `StreamWorker` continuously captures frames from RTSP or video files into a thread-safe ring buffer, maintaining stream health, drop detection, and connection metrics without blocking.
-- `AnalyticsEngine` retrieves frames for inference, tracks objects, evaluates perimeter rules, and publishes events asynchronously.
-- Slow network frames or intensive model inferences never deadlock or degrade the underlying video stream ingestion.
 
 ---
 
-## AI/ML & Computer Vision Pipeline
+## 11. Current AI/Computer Vision Pipeline
 
 ```
-Raw Frame → Frame Normalization → YOLOv8 Inference → ByteTrack Association → Analytical Rules → Threat Scorer
+Raw Frame ──► Normalization ──► YOLO Detection ──► ByteTrack Association ──► Parallel Analytics ──► Threat Scorer ──► Tactical HUD
 ```
 
 1. **Frame Ingestion & Preprocessing**:
-   - Frames are decoded via OpenCV (`cv2.VideoCapture`) with thread-safe circular buffering.
-   - Timestamps, frame counts, and instantaneous/average FPS metrics are continuously updated.
+   - Frames decoded via OpenCV `cv2.VideoCapture`.
+   - Normalization handled by [`FrameProcessor`](file:///backend/services/frame_processor.py) (ensuring 3-channel BGR format and valid dimensions).
+   - Ingestion metrics tracked continuously (FPS, total frames, dropped frames).
 2. **Object Detection**:
-   - Frames are processed by YOLOv8 (`yolov8n.pt` / `yolo11n.pt`).
-   - Relevant classes are filtered: `person`, `bicycle`, `car`, `motorcycle`, `bus`, `truck`, `train`.
-   - Bounding box coordinates, class labels, and confidence values are extracted.
+   - Frames fed to Ultralytics YOLO (`yolo11n.pt` / `yolov8n.pt`).
+   - Filters bounding boxes for classes: `person`, `bicycle`, `car`, `motorcycle`, `bus`, `truck`, `train`.
+   - Extracts coordinates $(x_1, y_1, x_2, y_2)$, class names, and confidence scores.
 3. **Multi-Object Tracking (ByteTrack)**:
-   - Detections are correlated across frames using ByteTrack (`bytetrack.yaml`).
-   - Each tracked subject receives a persistent `track_id` retained through brief occlusions.
-   - Historical centroids are recorded to maintain motion trajectory history.
+   - Associates detections across frames using ByteTrack (`tracker="bytetrack.yaml"`).
+   - Assigns a stable integer `track_id` to each entity to maintain continuous motion trajectory.
 4. **Parallel Analytics Evaluation**:
-   - The tracked bounding boxes and centroids are simultaneously evaluated against active perimeter geometry (fences, zones, direction vectors).
-5. **Specialized Inference Modules**:
-   - Near-field human crops are evaluated for facial presence.
-   - Detected vehicle bounding boxes are cropped and routed to the ANPR engine.
-6. **Composite Threat Assessment**:
-   - Detected rule violations are scored and aggregated into a composite risk level.
-7. **Frame Annotation & Streaming**:
-   - Bounding boxes, track IDs, tripwire lines, zone polygons, and active alerts are rendered directly onto the video frame and served as an annotated MJPEG stream.
+   - Centroids $(x_c, y_c)$ and bounding boxes evaluated against active virtual fences, restricted polygons, directional vectors, dwell counters, and spatial cluster groups.
+5. **Specialized Inference**:
+   - Evaluates face presence via Haar Cascades on near-field subjects.
+   - Crops detected vehicle bounding boxes and passes them to EasyOCR for alphanumeric license plate extraction.
+6. **Threat Scoring & Annotation**:
+   - Active infractions evaluated by the `SuspiciousActivityScorer` to assign a composite 0–100 threat score.
+   - Renders tactical HUD overlays (bounding boxes, track IDs, zone polygons, tripwire lines, status reticles) directly onto the frame for MJPEG output.
 
 ---
 
-## Security Analytics Modules
+## 12. Implemented Analytics Modules
 
-### 1. Virtual Fence / Tripwire Detection
-- **Mechanism**: Operators define a virtual line segment between two coordinates $(x_1, y_1)$ and $(x_2, y_2)$.
-- **Algorithm**: The system evaluates the 2D cross-product between the object centroid and the line vector across consecutive frames:
+### 1. Virtual Fence (Tripwire)
+- **File**: [`backend/analytics/virtual_fence.py`](file:///backend/analytics/virtual_fence.py)
+- **Algorithm**: Evaluates the 2D cross-product between the object centroid and the line vector $( (x_1, y_1), (x_2, y_2) )$:
   $$\text{Cross Product} = (x_2 - x_1)(y_c - y_1) - (y_2 - y_1)(x_c - x_1)$$
-- **Trigger**: A sign transition in the cross-product indicates that the tracked entity crossed from one side of the virtual boundary to the other, generating a `virtual_fence_crossing` event.
+- **Trigger**: A sign transition relative to the previous frame indicates crossing, emitting a `virtual_fence_crossing` event.
 
-### 2. Restricted Zone Entry Detection
-- **Mechanism**: Security zones are defined as arbitrary polygonal regions $[(x_1, y_1), (x_2, y_2), \dots, (x_n, y_n)]$.
-- **Algorithm**: Uses OpenCV's `cv2.pointPolygonTest` on the center coordinate of each tracked bounding box against the polygon contour.
-- **Trigger**: Any tracked subject whose centroid falls inside or on the boundary generates a `restricted_zone_entry` event.
+### 2. Restricted Zone Entry
+- **File**: [`backend/analytics/restricted_zone.py`](file:///backend/analytics/restricted_zone.py)
+- **Algorithm**: Evaluates object centroid against an arbitrary polygonal boundary using `cv2.pointPolygonTest`.
+- **Trigger**: Centroids returning $\ge 0$ (inside or on contour boundary) emit a `restricted_zone_entry` event.
 
 ### 3. Loitering Detection
-- **Mechanism**: Monitors spatial dwell time to detect individuals or vehicles remaining in sensitive sectors longer than authorized.
-- **Algorithm**: The platform records the initial timestamp (`first_seen`) for every active `track_id`. If the entity remains continuously active within the surveillance sector for duration:
-  $$\Delta t = t_{\text{current}} - t_{\text{first\_seen}} \ge \text{threshold\_seconds}$$
-- **Trigger**: An automated `loitering` event is emitted. An internal state flag prevents repeated triggers for the same track until the subject leaves.
+- **File**: [`backend/analytics/loitering.py`](file:///backend/analytics/loitering.py)
+- **Algorithm**: Tracks initial detection timestamp (`first_seen`) per `track_id`. Computes elapsed duration:
+  $$\Delta t = t_{\text{current}} - t_{\text{first\_seen}}$$
+- **Trigger**: When $\Delta t \ge \text{threshold\_seconds}$ (default: 15.0s), emits a `loitering` event with recorded duration. An internal flag suppresses duplicate triggers for the same active track.
 
-### 4. Wrong-Direction Movement Detection
-- **Mechanism**: Enforces one-way security lanes, checkpoint ingress/egress routes, and authorized patrol directions.
-- **Algorithm**: Compares the displacement vector of a tracked entity $\vec{v} = (x_{\text{curr}} - x_{\text{prev}}, y_{\text{curr}} - y_{\text{prev}})$ against a normalized expected direction vector $\vec{u}$:
-  $$\text{Dot Product} = \vec{v} \cdot \vec{u} = v_x u_x + v_y u_y$$
-- **Trigger**: When the displacement exceeds the minimum travel distance and the dot product is negative ($\vec{v} \cdot \vec{u} < 0$), the entity is moving contrary to the authorized flow, generating a `wrong_direction` event.
+### 4. Wrong-Direction Movement
+- **File**: [`backend/analytics/wrong_direction.py`](file:///backend/analytics/wrong_direction.py)
+- **Algorithm**: Computes displacement vector $\vec{v} = (x_{\text{curr}} - x_{\text{prev}}, y_{\text{curr}} - y_{\text{prev}})$ for movements $\ge 5.0\text{ px}$. Computes dot product with normalized expected vector $\vec{u}$:
+  $$\text{Dot Product} = \vec{v} \cdot \vec{u}$$
+- **Trigger**: When $\vec{v} \cdot \vec{u} < -0.5$, motion is contrary to the authorized direction, emitting a `wrong_direction` event.
 
 ### 5. Group Movement Detection
-- **Mechanism**: Identifies abnormal gatherings or coordinated group breaches along border perimeter lines.
-- **Algorithm**: Evaluates pairwise Euclidean distances between centroids of all active tracked subjects:
-  $$d(p_i, p_j) = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}$$
-- **Trigger**: When the number of subjects clustered within a spatial threshold (e.g., $120\text{ px}$) reaches or exceeds the configured minimum group size (default: 3), a `group_movement` event is registered.
+- **File**: [`backend/analytics/group_movement.py`](file:///backend/analytics/group_movement.py)
+- **Algorithm**: Evaluates pairwise Euclidean distances between centroids of all active tracked subjects.
+- **Trigger**: When $\ge 3$ distinct track IDs cluster within a distance threshold ($120.0\text{ px}$), emits a `group_movement` event with member track IDs and cluster size.
 
-### 6. Night-Time Movement Detection
-- **Mechanism**: Detects movement in unlit or low-visibility perimeter zones during night surveillance operations.
-- **Algorithm**: Computes the mean luminance across the grayscale frame:
-  $$\mu_L = \frac{1}{W \times H} \sum_{x,y} I(x, y)$$
-- **Trigger**: When the scene brightness falls below the night threshold ($\mu_L < 60.0$) and moving tracked objects are detected, a `night_movement` event is generated.
+### 6. Night Movement Detection
+- **File**: [`backend/analytics/night_movement.py`](file:///backend/analytics/night_movement.py)
+- **Algorithm**: Computes mean luminance of the frame in grayscale:
+  $$\mu_L = \frac{1}{W \times H} \sum_{x, y} I_{\text{gray}}(x, y)$$
+- **Trigger**: When $\mu_L < 60.0$ and moving tracked entities change centroid position, emits a `night_movement` event.
 
-### 7. Face Detection
-- **Mechanism**: Inspects near-field surveillance views for human presence using Haar Cascade classifiers (`haarcascade_frontalface_default.xml`).
-- **Trigger**: Emits `face_detected` events with bounding box coordinates for operator awareness.
-
-### 8. Automatic Number Plate Recognition (ANPR)
-- **Mechanism**: Extracts alphanumeric license plate text from detected vehicle bounding boxes.
-- **Optimizations**:
-  - **Crop-Based Execution**: Runs OCR strictly on cropped vehicle bounding boxes (cars, trucks, buses, motorcycles), avoiding expensive full-frame OCR.
-  - **Track-Level Caching**: Caches recognized plate results against the vehicle's `track_id` to eliminate repetitive per-frame OCR computations.
-  - **Fault-Tolerant Fallback**: EasyOCR initializes lazily and handles missing characters or poor lighting gracefully without halting stream processing.
-
-### 9. Multi-Signal Suspicious Activity Scoring
-Instead of overwhelming operators with isolated alarms, the `SuspiciousActivityScorer` combines multiple behavioral signals into an explainable 0–100 composite risk score:
-
-| Signal Type | Weight | Explanation |
-| :--- | :---: | :--- |
-| **Restricted Zone Entry** | `+40 pts` | Unauthorized intrusion into critical security sector |
-| **Virtual Fence Breach** | `+35 pts` | Physical tripwire boundary crossing |
-| **Wrong Direction** | `+25 pts` | Movement counter to authorized ingress/egress |
-| **Loitering Presence** | `+20 pts` | Prolonged stationary presence exceeding threshold |
-| **Night Movement** | `+20 pts` | Movement detected under low-light/covert conditions |
-| **Group Formation** | `+15 pts` | Multiple individuals gathering along border line |
-
-**Risk Level Mapping**:
-- `0 – 24 pts`: **NORMAL**
-- `25 – 49 pts`: **LOW RISK**
-- `50 – 69 pts`: **MEDIUM RISK**
-- `70 – 84 pts`: **HIGH RISK**
-- `85 – 100 pts`: **CRITICAL**
-
-When composite risk reaches **HIGH** or **CRITICAL**, an immediate high-priority security alert is dispatched with human-readable rationale (e.g., *"Restricted border zone entry + Prolonged loitering"*).
+### 7. Multi-Signal Suspicious Activity Scoring
+- **File**: [`backend/analytics/suspicious_activity.py`](file:///backend/analytics/suspicious_activity.py)
+- **Algorithm**: Multi-signal accumulator combining individual behavioral violations into a unified score (0–100):
+  - Restricted Zone Entry: `+40 pts`
+  - Virtual Fence Crossing: `+35 pts`
+  - Wrong Direction: `+25 pts`
+  - Loitering: `+20 pts`
+  - Night Movement: `+20 pts`
+  - Group Movement: `+15 pts`
+- **Thresholds**:
+  - `0 – 24 pts`: **NORMAL**
+  - `25 – 49 pts`: **LOW RISK**
+  - `50 – 69 pts`: **MEDIUM RISK**
+  - `70 – 84 pts`: **HIGH RISK**
+  - `85 – 100 pts`: **CRITICAL**
+- **Trigger**: When score $\ge 50$ or $\ge 2$ distinct infractions occur for a track, a composite `suspicious_activity` event is generated with human-readable rationale.
 
 ---
 
-## Alert & Event Dispatch System
+## 13. Backend and API Capabilities
 
-IBVAP implements a structured, two-tier event and alert pipeline:
-
-```
-Analytics Detector → Analytics Event Bridge → EventService → AlertService → Operator Notification
-```
-
-1. **Events vs. Alerts**:
-   - **Events**: Low-level forensic occurrences (`face_detected`, `plate_detected`, `group_movement`, `loitering`, etc.) recorded in the persistent event audit log.
-   - **Alerts**: Operational alarms generated automatically when an event carries **HIGH** or **CRITICAL** severity (e.g., virtual fence breaches, restricted zone entries, high composite threat scores).
-2. **Alert Fields & Metadata**:
-   - `id`: Unique incremental identifier.
-   - `camera_id`: Source camera identifier (e.g., `CAM-001`, `BOP-NORTH-04`).
-   - `event_type`: Categorical event code.
-   - `severity`: Priority classification (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
-   - `status`: Lifecycle state (`ACTIVE` or `RESOLVED`).
-   - `timestamp`: ISO-8601 UTC timestamp of occurrence.
-   - `confidence`: AI detection confidence metric.
-   - `details`: Contextual metadata including bounding boxes, track IDs, durations, and rule parameters.
-3. **Deduplication & Cooldown**:
-   - In video surveillance, an intruder lingering near a boundary would otherwise generate dozens of duplicate events per second.
-   - IBVAP maintains a composite deduplication key: `camera_id:event_type:severity`.
-   - A configurable cooldown window (default: **5.0 seconds**) suppresses identical consecutive triggers, ensuring clean, actionable alert streams for operators.
-4. **Alert Triage & Resolution**:
-   - Operators can review active alerts in real time and mark them as `RESOLVED` with a single click, recording an audit trail for shift handovers.
+The backend is built with **FastAPI** and structured into decoupled domain services:
+- **`StreamManager`**: Central registry managing lifecycle, health queries, and thread safety across all camera workers.
+- **`StreamWorker`**: Independent worker thread per camera executing capture, reconnection, buffering, and coordinating the analytics thread.
+- **`AnalyticsEngine`**: Pipeline orchestrator initializing YOLO, ByteTrack, Haar cascades, EasyOCR, and spatial detectors.
+- **`EventService`**: Thread-safe event repository with 5.0s deduplication cooldown window.
+- **`AlertService`**: Active/resolved alert manager with severity filtering and manual resolution.
+- **`IntelligenceService`**: High-level zone rules and test simulation engine.
 
 ---
 
-## FORGE COMMAND Frontend Architecture
+## 14. Frontend Capabilities
 
-The frontend has been completely redesigned with a bespoke, dark industrial intelligence interface titled **"FORGE COMMAND"**. Moving away from generic AI-generated admin dashboards, FORGE COMMAND combines the functional austerity of military-grade information hierarchy with the fluid usability of a state-of-the-art surveillance operations center.
+The frontend is implemented with **React 19**, **TypeScript**, and **Vite**, featuring the **"FORGE COMMAND"** dark tactical operations design system:
 
-### Visual Identity & Color System
+### Operational Pages & Routes
 
-The interface adheres to an intentional, restrained chromatic hierarchy:
-- **Deep Charcoal & Warm Black** (`#111111`, `#171513`): Base background surfaces eliminating eye fatigue in 24/7 dark control rooms.
-- **Dark Graphite & Raised Surface** (`#20201D`, `#242220`): Structural containment panels, HUD borders, and data matrices.
-- **Brand Rust & Burnt Orange** (`#9F4032`, `#C76B3C`): Primary visual identity, mission callsigns, and active operational highlights.
-- **Muted Copper** (`#A66A4C`): Technical identifiers, camera node IDs, and coordinate parameters.
-- **Warm Cream & Bright Off-White** (`#E9E0D2`, `#FFFFFF`): High-legibility typography for primary readings and metrics.
-- **Warning Amber & Critical Red** (`#D6A64A`, `#D9534F`): Strictly reserved for threat escalation, rule violations, and system alerts.
-- **Muted Green** (`#6E9B7B`): Reserved exclusively for healthy, operational telemetry beacons.
-
-### Navigation & Command Ergonomics
-
-1. **Compact Navigation Rail (`NavigationRail.tsx`)**:
-   - Slim vertical rail with collapsible expansion on hover or manual toggle.
-   - Features tactical three-letter callsign codes (`OVW`, `OPS`, `NOD`, `INT`, `ZON`, `ALT`, `EVT`, `SYS`, `SET`).
-   - Dynamic real-time badges indicating active alert counts and online camera node counts.
-2. **Contextual Top Command Bar (`CommandBar.tsx`)**:
-   - Displays real-time dual mission clocks: **Local Station Time** and **UTC Synchronization**.
-   - Sector station callsign indicator (`FORGE / C2-MONITOR // SECTOR-01`).
-   - Persistent FastAPI gateway health beacon with single-click manual sync.
-   - Global quick command search palette trigger (`⌘K` / `Ctrl+K`).
-3. **Mission Command Palette (`CommandPalette.tsx`)**:
-   - Modal palette accessible globally via `Ctrl+K` or `Cmd+K`.
-   - Keyboard arrow navigation and Enter execution for jumping across surveillance stations or triggering camera deployment.
-
-### Redesigned Operational Pages
-
-| Station / View | Route | Operational Capability |
+| Page | Route | Features & Current Status |
 | :--- | :--- | :--- |
-| **Overview Dashboard** | `/` | Operational C2 command center. Features the **Sector Security Matrix** with active radar sweep visualization, live operational KPIs (Gateway Status, Active Streams, Threat Count, Detections), supporting modules for Active Threats, Node Health, and AI Detection Breakdown, plus an audit event stream. Zero invented or fake metrics. |
-| **Live Operations** | `/surveillance` | High-performance multi-camera surveillance workstation. Supports **1×1 Focus**, **1×2 Split**, **2×2 Quad**, and **3×2 Six-Up** grid layouts. Each camera tile streams independently with its own HUD reticle, FPS counter, threat score pill, AI overlay toggle, snapshot polling fallback mode, and error boundary. An offline or disconnected camera does not affect any other tile. |
-| **Camera Fleet Registry** | `/cameras` | Table/list hybrid management console. Features instant search across Node IDs, callsigns, and sectors, status filters, sorting by FPS or status, view mode toggle (Table vs. Cards), and direct controls to start/stop workers, edit zones, or decommission cameras. |
-| **Threat Incident Registry** | `/alerts` | Structured incident feed emphasizing visual hierarchy. Critical alarms are highlighted with deep rust/red borders, confidence scores, camera origins, and one-click **Acknowledge & Resolve** actions with live station telemetry. |
-| **Event Stream Audit** | `/events` | Real-time searchable event ledger tracking every boundary cross, loitering trigger, and AI detection with type filtering and simulated incident triggers. |
-| **Perimeter Zone Manager** | `/zones` | Precision coordinate calibration interface for virtual tripwire lines and restricted perimeter polygons with quick presets for sample CCTV footage. |
-| **Intelligence Analytics** | `/analytics` | Real telemetry aggregations from `/analytics/summary`, showing threat severity stratification, detection type breakdown, and event frequency distributions. |
-| **System Diagnostics** | `/health` | Ingestion thread health console tracking dropped frame counts, OpenCV capture workers, and gateway response latency. |
-| **Station Settings** | `/settings` | Operational preferences persisted to browser station memory, including telemetry polling intervals (1.2s to 5.0s), default viewport modes, AI overlay defaults, confidence score thresholds, and audible sirens. |
+| **Overview Dashboard** | `/` | Operational overview with live KPIs, active alert feeds, camera status breakdown, radar sweep widget, and real-time telemetry from `/analytics/summary`. Fully functional. |
+| **Live Surveillance** | `/surveillance` | Multi-camera surveillance workstation supporting 1×1 Focus, 1×2 Split, 2×2 Quad, and 3×2 Six-Up layouts. Each tile streams independent MJPEG video with fallback snapshot polling, HUD reticles, FPS counters, and overlay toggles. Fully functional. |
+| **Camera Nodes** | `/cameras` | Fleet registry with Table and Card views, instant search by ID/sector, status filters, and one-click Start/Stop/Disconnect controls. Fully functional. |
+| **Threat Alerts** | `/alerts` | Incident feed filtering by status (`ACTIVE`, `RESOLVED`) and severity (`CRITICAL`, `HIGH`, etc.), search, one-click **Resolve**, and simulated incident triggers. Fully functional. |
+| **Event History** | `/events` | Searchable audit ledger tracking boundary crosses, detections, and rule triggers with category filters and simulation triggers. Fully functional. |
+| **Zone Management** | `/zones` | Coordinate calibration interface for virtual fence lines and restricted zone polygons with live snapshot preview and preset buttons. Fully functional. |
+| **Intelligence Analytics** | `/analytics` | Real telemetry aggregations from `/analytics/summary` showing event type breakdowns, severity distributions, and detection totals. Fully functional. |
+| **System Diagnostics** | `/health` | Hardware and pipeline console tracking OpenCV worker status, dropped frames, uptime, and gateway connectivity. Fully functional. |
+| **Station Settings** | `/settings` | Operational preferences persisted to browser `localStorage` (telemetry intervals, default viewports, overlay toggles, audible sirens, confidence thresholds). Client-side persistence. |
 
-### Key UI Components
-
-- **`SurveillanceCameraTile.tsx`**: Isolated viewport module with independent MJPEG streaming, snapshot fallback polling (1.5s), HUD corner reticles, fullscreen trigger, and error recovery.
-- **`NavigationRail.tsx`**: Ergonomic vertical rail with status pips, active badges, and mission code glyphs.
-- **`CommandBar.tsx`**: Persistent mission bar with dual UTC/Local clocks, station status, and search trigger.
-- **`CommandPalette.tsx`**: Keyboard-navigable quick command launcher (`Ctrl+K`).
-- **`ConnectCameraModal.tsx`**: Multi-protocol connection dialog featuring an 8-item sample CCTV preset gallery and drag-and-drop file upload.
-- **`StatusBadge.tsx`**: Semantic visual status indicator (`ONLINE`, `OFFLINE`, `RECONNECTING`, `ERROR`).
-- **`VirtualFenceModal.tsx`**: Interactive modal for calibrating tripwire line vectors and polygon coordinates.
+### Core UI Components
+- **`NavigationRail.tsx`**: Collapsible vertical rail with tactical three-letter callsign glyphs (`OVW`, `OPS`, `NOD`, `ALT`, `EVT`, `ZON`, `INT`, `SYS`, `SET`) and live badge counters.
+- **`CommandBar.tsx`**: Mission bar displaying synchronized Local Station Time, UTC Time, station status, and quick search trigger.
+- **`CommandPalette.tsx`**: Keyboard-navigable quick command launcher (`Ctrl+K` / `Cmd+K`) for jumping across views and triggering common actions.
+- **`ConnectCameraModal.tsx`**: Multi-protocol connection dialog supporting RTSP URLs, local file paths, webcam device indices, drag-and-drop file upload, and an 8-item sample CCTV preset gallery.
+- **`SurveillanceCameraTile.tsx`**: Viewport tile with independent MJPEG streaming, snapshot fallback polling (1.5s), HUD reticles, and fullscreen view.
 
 ---
 
-## Camera & Stream Ingestion Support
-
-IBVAP is designed to ingest standard video streams without requiring vendor-specific proprietary hardware:
-
-1. **Existing CCTV / IP Cameras**:
-   - Ingests standard **H.264 / H.265** video feeds over **RTSP** (`rtsp://username:password@ip:port/h264Preview_01_main`).
-   - Compatible with major commercial security camera brands (Hikvision, Dahua, Axis, CP Plus, Hanwha, Uniview, Bosch) supporting RTSP.
-2. **Local & Uploaded CCTV Video Files**:
-   - Supports recorded MP4, AVI, and MKV video files for testing, system evaluation, demonstration, and forensic re-analysis.
-   - Includes automatic loop playback (`loop_video: true`) for continuous simulation.
-   - Built-in video upload endpoint (`POST /streams/upload`) stores sample CCTV footage directly in the `samples/` directory.
-3. **Direct Webcam & Capture Cards**:
-   - Ingests USB webcams and HDMI capture cards using integer device indices (e.g., `source_url: "0"`).
-4. **Resilient Multi-Stream Architecture**:
-   - Each registered stream executes in its own isolated `StreamWorker` thread.
-   - Includes automatic drop detection: if no frames are received within `STREAM_TIMEOUT_SEC` (default: 5.0s), the camera transitions to `RECONNECTING`.
-   - Automatically reconnects with exponential backoff up to `MAX_RECONNECT_ATTEMPTS` before marking the stream as `ERROR`.
-
----
-
-## Technology Stack
+## 15. Technology Stack
 
 ### Backend
 - **Python 3.10+ / 3.12**: Core runtime environment.
-- **FastAPI**: High-performance asynchronous REST API framework and streaming server.
-- **Uvicorn**: ASGI web server implementation.
-- **OpenCV (opencv-python-headless 4.10)**: Video stream decoding, frame normalization, geometric algorithms, and image processing.
-- **YOLOv8 / Ultralytics (8.4.140)**: State-of-the-art object detection for perimeter security classes.
-- **PyTorch**: Deep learning execution backend for YOLO and EasyOCR.
-- **ByteTrack**: Multi-object association and tracking algorithm.
-- **EasyOCR (1.7.1)**: Optical character recognition engine for vehicle license plate extraction.
-- **NumPy (1.24+)**: Matrix and vector mathematics for geometry and trajectory evaluation.
-- **Pydantic (2.6+)**: Data validation, schema definitions, and application settings.
+- **FastAPI (0.110+)**: High-performance asynchronous REST API framework and streaming server.
+- **Uvicorn (0.28+)**: ASGI production-grade web server.
+- **OpenCV Headless (4.10.0.84)**: Video capture, image decoding, geometric transforms, and Haar cascades.
+- **Ultralytics (8.4.140)**: YOLOv8 / YOLO11 object detection and ByteTrack multi-object tracking.
+- **PyTorch**: Deep learning tensor execution engine.
+- **EasyOCR (1.7.1)**: Optical character recognition engine for vehicle license plate crops.
+- **NumPy (1.24+)**: Vector mathematics and array processing.
+- **Pydantic (2.6+) & pydantic-settings**: Request validation and application settings.
 
 ### Frontend
-- **React 19**: Modern component-based user interface library.
-- **TypeScript**: Type-safe frontend application code.
-- **Vite 8**: Fast frontend build tooling and development server.
-- **React Router DOM 7**: Client-side routing across dashboard views.
-- **Pure Vanilla CSS**: Modular, dark-theme surveillance design system without heavy framework dependencies.
-
-### Protocols & Tools
-- **REST APIs**: JSON-based platform configuration and event queries.
-- **MJPEG Streaming**: Multipart JPEG video streaming over HTTP (`multipart/x-mixed-replace`).
-- **RTSP**: Real-Time Streaming Protocol for IP camera ingestion.
-- **Git & GitHub**: Version control and source code collaboration.
-- **Pytest**: Automated backend test suite.
+- **React (19.2+)**: Component-based UI library.
+- **TypeScript (~6.0)**: Strict static type checking.
+- **Vite (8.2+)**: Frontend build tooling and fast HMR development server.
+- **React Router DOM (7.18+)**: Client-side single-page application routing.
+- **Vanilla CSS (FORGE COMMAND)**: Bespoke dark tactical surveillance design system with zero external UI framework dependencies.
 
 ---
 
-## Project Structure
+## 16. Project Structure
 
 ```
 IBVAP-Intelligent-Border-Video-Analytics-Platform/
 ├── backend/
-│   ├── analytics/                      # Security analytics detector implementations
-│   │   ├── __init__.py
-│   │   ├── group_movement.py           # Spatial clustering & group movement detection
+│   ├── analytics/                      # Rule-based security analytics detectors
+│   │   ├── group_movement.py           # Spatial clustering & group movement
 │   │   ├── loitering.py                # Dwell-time loitering detector
-│   │   ├── night_movement.py           # Low-light / luminance analysis detector
+│   │   ├── night_movement.py           # Low-light luminance movement detector
 │   │   ├── restricted_zone.py          # Point-in-polygon zone intrusion detector
-│   │   ├── suspicious_activity.py      # Multi-signal composite threat scoring engine
-│   │   ├── virtual_fence.py            # Line-crossing / tripwire detector
-│   │   └── wrong_direction.py          # Trajectory vector dot-product detector
-│   ├── api/                            # FastAPI route definitions
-│   │   ├── __init__.py
+│   │   ├── suspicious_activity.py      # Multi-signal composite threat scoring (0-100)
+│   │   ├── virtual_fence.py            # Line-crossing tripwire detector
+│   │   └── wrong_direction.py          # Vector dot-product direction detector
+│   ├── api/                            # FastAPI route handlers
 │   │   ├── alerts.py                   # Alert query and resolution endpoints
-│   │   ├── analytics.py                # Aggregated intelligence metrics & single-frame analysis
-│   │   ├── events.py                   # Event logging and query endpoints
-│   │   ├── health.py                   # System health, uptime, and camera count
-│   │   ├── intelligence.py             # Virtual fence and zone configuration APIs
-│   │   ├── streams.py                  # Stream connection, MJPEG streaming, snapshot & upload APIs
-│   │   └── zones.py                    # Camera zone geometry management APIs
-│   ├── inference/                      # Deep learning and vision inference modules
-│   │   ├── __init__.py
+│   │   ├── analytics.py                # Telemetry summary & frame analysis
+│   │   ├── events.py                   # Event query and logging endpoints
+│   │   ├── health.py                   # System health, uptime, and camera counts
+│   │   ├── intelligence.py             # Zones list, evaluate movement, and simulations
+│   │   ├── streams.py                  # Stream connection, live MJPEG, snapshots, upload
+│   │   └── zones.py                    # Dynamic camera zone geometry configuration
+│   ├── inference/                      # Deep learning inference wrappers
 │   │   ├── anpr.py                     # Crop-optimized EasyOCR license plate recognition
-│   │   ├── face_detector.py            # Haar-cascade facial presence detector
-│   │   ├── tracker.py                  # YOLOv8 + ByteTrack object tracker
-│   │   └── yolo_detector.py            # YOLO model wrapper and bounding box parsing
-│   ├── models/                         # Pydantic schemas and domain models
-│   │   ├── __init__.py
+│   │   ├── face_detector.py            # OpenCV Haar-cascade face detector
+│   │   ├── tracker.py                  # YOLO + ByteTrack multi-object tracker
+│   │   └── yolo_detector.py            # YOLO detector wrapper and bounding box parser
+│   ├── models/                         # Pydantic schemas & dataclasses
 │   │   ├── alert.py                    # Alert, Severity, and AlertStatus schemas
-│   │   ├── camera.py                   # StreamConnectRequest, StreamHealth, StreamInfo schemas
+│   │   ├── camera.py                   # StreamConnectRequest, StreamHealth, StreamInfo
 │   │   ├── detection.py                # BoundingBox and DetectionResult dataclasses
 │   │   ├── event.py                    # Event and CreateEventRequest schemas
 │   │   └── zone.py                     # ZoneConfig, Point, and MovementTrack schemas
-│   ├── services/                       # Application services and background workers
-│   │   ├── __init__.py
-│   │   ├── alert_service.py            # Thread-safe alert lifecycle management
-│   │   ├── analytics_engine.py         # Unified video analytics orchestration pipeline
-│   │   ├── analytics_event_bridge.py   # Event normalization and translation bridge
-│   │   ├── event_service.py            # Event persistence with 5s cooldown deduplication
-│   │   ├── frame_processor.py          # Frame normalization and snapshot formatting
-│   │   ├── intelligence_service.py     # High-level zone rules and event correlation
-│   │   ├── stream_manager.py           # Multi-camera registry and MJPEG generator
-│   │   └── stream_worker.py            # Dedicated background camera ingestion thread
-│   └── main.py                         # FastAPI application entry point, CORS, and lifecycle
+│   ├── services/                       # Core application services
+│   │   ├── alert_service.py            # In-memory alert management and resolution
+│   │   ├── analytics_engine.py         # Unified video analytics pipeline orchestrator
+│   │   ├── analytics_event_bridge.py   # Normalization bridge from analytics to events
+│   │   ├── event_service.py            # In-memory event repository with 5s deduplication
+│   │   ├── frame_processor.py          # Frame validation and normalization
+│   │   ├── intelligence_service.py     # High-level zone rules and test simulation engine
+│   │   ├── stream_manager.py           # Multi-camera registry and lifecycle manager
+│   │   └── stream_worker.py            # Multi-threaded background camera ingestion worker
+│   └── main.py                         # FastAPI entry point, CORS, and lifecycle setup
 ├── config/
-│   ├── __init__.py
 │   └── settings.py                     # Centralized settings with environment variable support
 ├── frontend/                           # React + TypeScript command center dashboard
-│   ├── public/                         # Static assets
 │   ├── src/
-│   │   ├── api/                        # HTTP client wrappers (streams, events, alerts, health)
-│   │   ├── components/                 # Reusable UI components (CameraCard, Topbar, Sidebar, modals)
-│   │   ├── hooks/                      # Custom React hooks (useHealth, useStreams)
-│   │   ├── pages/                      # Dashboard, LiveSurveillance, Alerts, Events, Zones, Health
-│   │   ├── App.css                     # Command center design system and theme styles
-│   │   ├── App.tsx                     # Main layout and client-side routing
-│   │   ├── index.css                   # Global CSS resets and typography
-│   │   └── main.tsx                    # React application entry point
-│   ├── index.html                      # HTML document shell
+│   │   ├── api/                        # Typed HTTP client modules (streams, alerts, events, etc.)
+│   │   ├── components/                 # UI components (CommandBar, NavigationRail, tiles, modals)
+│   │   ├── hooks/                      # Custom hooks (useHealth, useStreams, useAlerts, useEvents)
+│   │   ├── pages/                      # 9 operational pages (Dashboard, Surveillance, Cameras, etc.)
+│   │   ├── App.css                     # FORGE COMMAND dark industrial theme styles
+│   │   ├── App.tsx                     # Main layout shell and route definitions
+│   │   ├── index.css                   # CSS reset and tactical typography tokens
+│   │   └── main.tsx                    # React client entry point
 │   ├── package.json                    # Frontend dependencies and scripts
-│   ├── tsconfig.json                   # TypeScript project configuration
-│   └── vite.config.ts                  # Vite bundler configuration
+│   ├── tsconfig.json                   # TypeScript compiler configuration
+│   └── vite.config.ts                  # Vite build configuration
+├── evidence/                           # Local disk storage for event evidence snapshot JPEGs
 ├── samples/                            # Sample CCTV footage for demonstration and evaluation
-│   ├── Sample for CCTV.mp4
-│   ├── Sample2 for CCTV.mp4
-│   ├── Sample3 class for CCTV.mp4
-│   ├── Sample4 class movement for CCTV.mp4
-│   ├── Sample5 class loitering for CCTV.mp4
-│   ├── Sample6 class cut for CCTV.mp4
-│   ├── Sample7 class adit for CCTV.mp4
-│   └── test_border_feed.mp4
 ├── scripts/
-│   ├── __init__.py
-│   └── generate_sample_cctv.py         # Utility script to generate synthetic test CCTV videos
-├── tests/                              # Automated test suite
-│   ├── __init__.py
-│   ├── conftest.py                     # Shared pytest fixtures and mock generators
-│   ├── test_alerts_api.py              # Alert endpoint integration tests
+│   └── generate_sample_cctv.py         # Synthetic CCTV video generator utility
+├── tests/                              # Automated Pytest suite (30 passing tests)
+│   ├── conftest.py                     # Shared test fixtures and mocks
+│   ├── test_alerts_api.py              # Alert endpoint tests
 │   ├── test_events_api.py              # Event logging and query tests
 │   ├── test_frame_processor.py         # Frame normalization tests
 │   ├── test_health.py                  # Health check tests
 │   ├── test_intelligence.py            # Perimeter rules and correlation tests
 │   ├── test_stream_worker.py           # Ingestion thread failure and reconnect tests
 │   └── test_streams_api.py             # Camera stream lifecycle tests
+├── test_full_pipeline.py               # Standalone end-to-end video analytics benchmark script
+├── test_multi_object.py                # Standalone multi-object detection test script
 ├── LICENSE                             # MIT Open-Source License
 ├── pytest.ini                          # Pytest configuration
 ├── requirements.txt                    # Python backend dependencies
-└── README.md                           # Project documentation
+└── README.md                           # Complete project documentation
 ```
 
 ---
 
-## Installation & Setup
+## 17. Installation and Setup
 
 ### Prerequisites
-- **Operating System**: Windows 10/11 (also compatible with Linux and macOS)
+- **Operating System**: Windows 10/11, Ubuntu 20.04/22.04 LTS, or macOS
 - **Python**: Version 3.10 to 3.12
 - **Node.js**: Version 18+ or 20+ (with npm)
-- **Git**: Installed and available in your command path
+- **Git**: Installed and configured
 
 ### Step 1: Clone the Repository
-
-Open Command Prompt or PowerShell:
-
-```cmd
+```bash
 git clone https://github.com/om-saxena34/IBVAP-Intelligent-Border-Video-Analytics-Platform.git
 cd IBVAP-Intelligent-Border-Video-Analytics-Platform
 ```
 
-### Step 2: Backend Setup (Python Virtual Environment)
-
-1. Create a Python virtual environment:
-   ```cmd
-   python -m venv venv
-   ```
-
-2. Activate the virtual environment:
-   - On Windows (PowerShell):
+### Step 2: Backend Setup
+1. Create and activate a Python virtual environment:
+   - **Windows (PowerShell)**:
      ```powershell
+     python -m venv venv
      .\venv\Scripts\Activate.ps1
      ```
-   - On Windows (Command Prompt):
-     ```cmd
-     venv\Scripts\activate.bat
+   - **Linux / macOS**:
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
      ```
 
-3. Upgrade `pip` and install backend dependencies:
-   ```cmd
+2. Install Python dependencies:
+   ```bash
    python -m pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
-> **Note on YOLO Models**: On first execution, Ultralytics will automatically download the lightweight `yolov8n.pt` / `yolo11n.pt` weights if not already present in the project root.
+> **Note on Model Weights**: On first startup, Ultralytics will automatically download the standard `yolov8n.pt` / `yolo11n.pt` weights if not already present in the workspace root.
 
-### Step 3: Frontend Setup (React Dashboard)
-
-Open a second terminal window, navigate to the `frontend` folder, and install dependencies:
-
-```cmd
+### Step 3: Frontend Setup
+In a separate terminal window, navigate to the `frontend` folder and install dependencies:
+```bash
 cd frontend
 npm install
 ```
 
 ---
 
-## Running the Application
+## 18. Running the Application
 
-### 1. Start the Backend Server
-
-From the project root directory (with your Python virtual environment activated):
-
-```cmd
+### 1. Start the Backend API Server
+From the repository root (with virtual environment activated):
+```bash
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+- **API Base URL**: `http://127.0.0.1:8000`
+- **Swagger Interactive API Docs**: `http://127.0.0.1:8000/docs`
+- **ReDoc Documentation**: `http://127.0.0.1:8000/redoc`
 
-- **Backend API Root**: `http://127.0.0.1:8000`
-- **Interactive Swagger Documentation**: `http://127.0.0.1:8000/docs`
-- **Alternative ReDoc Documentation**: `http://127.0.0.1:8000/redoc`
-
-### 2. Start the Frontend Surveillance Dashboard
-
+### 2. Start the Frontend Command Dashboard
 From the `frontend` directory:
-
-```cmd
+```bash
 cd frontend
 npm run dev
 ```
+- **Web Interface**: `http://localhost:5173`
 
-The Vite development server will launch at:
-- **Command Dashboard**: `http://localhost:5173`
+Open `http://localhost:5173` in any modern web browser to access the command center.
 
-Open `http://localhost:5173` in any modern web browser (Google Chrome, Microsoft Edge, Mozilla Firefox) to access the surveillance interface.
+---
 
-### 3. Running Automated Tests
+## 19. API Reference
 
-To run the backend test suite verifying stream workers, alert deduplication, and API endpoints:
+The FastAPI backend provides documented REST endpoints. All endpoints return JSON unless streaming media.
 
-```cmd
+### System & Health
+| Method | Endpoint | Description | Request / Params | Response Summary | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/` | Root platform metadata | None | Platform title, version, status, endpoint URLs | Implemented |
+| `GET` | `/health` | System health & uptime | None | Status (`healthy`), uptime, total/online camera counts | Implemented |
+
+### Video Streams (`/streams`)
+| Method | Endpoint | Description | Request / Params | Response Summary | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/streams/connect` | Register and launch camera worker | `StreamConnectRequest` (JSON) | `StreamInfo` with initial health | Implemented |
+| `POST` | `/streams/upload` | Upload video to `samples/` | Multipart form `file` | File path, name, size | Implemented |
+| `GET` | `/streams/samples` | List sample videos in `samples/` | None | Array of available sample video files | Implemented |
+| `GET` | `/streams` | List all registered camera streams | None | Array of `StreamInfo` objects | Implemented |
+| `GET` | `/streams/{id}` | Get stream details | Path: `id` (camera_id) | `StreamInfo` object | Implemented |
+| `GET` | `/streams/{id}/health`| Get real-time health metrics | Path: `id` | `StreamHealth` (FPS, dropped frames, status) | Implemented |
+| `GET` | `/streams/{id}/detections`| Get latest detection telemetry | Path: `id` | Track counts, classes, threat level, capabilities | Implemented |
+| `GET` | `/streams/{id}/live` | Live MJPEG video stream | Query: `annotated=true` | Multipart JPEG video stream (`x-mixed-replace`) | Implemented |
+| `GET` | `/streams/{id}/snapshot`| Get latest single frame JPEG | Query: `annotated=true` | Single `image/jpeg` binary | Implemented |
+| `POST` | `/streams/{id}/disconnect`| Stop stream worker | Path: `id` | `StreamDisconnectResponse` | Implemented |
+| `DELETE`| `/streams/{id}` | Stop stream worker (DELETE) | Path: `id` | `StreamDisconnectResponse` | Implemented |
+
+### Events & Alerts (`/events`, `/alerts`)
+| Method | Endpoint | Description | Request / Params | Response Summary | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/events` | Log a detected event | `CreateEventRequest` (JSON) | Created `Event` (triggers alert if HIGH/CRITICAL) | Implemented |
+| `GET` | `/events` | List all recorded events | Query: `camera_id` (optional) | `EventListResponse` with events array and total | Implemented |
+| `GET` | `/alerts` | List all security alerts | Query: `camera_id`, `status`, `severity` | `AlertListResponse` with alerts array and total | Implemented |
+| `POST` | `/alerts/{id}/resolve`| Resolve an active alert | Path: `id` (alert_id) | Updated `Alert` with `status: RESOLVED` | Implemented |
+| `PATCH`| `/alerts/{id}/resolve`| Resolve an active alert (PATCH) | Path: `id` | Updated `Alert` with `status: RESOLVED` | Implemented |
+
+### Intelligence & Zones (`/intelligence`, `/intelligence/zones`)
+| Method | Endpoint | Description | Request / Params | Response Summary | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/intelligence/zones` | List default zones | Query: `camera_id` (optional) | `ZoneListResponse` | Implemented |
+| `POST` | `/intelligence/zones` | Create a zone configuration | `CreateZoneRequest` (JSON) | Created `ZoneConfig` | Implemented |
+| `DELETE`| `/intelligence/zones/{id}`| Remove a zone configuration | Path: `id` (zone_id) | Deletion confirmation message | Implemented |
+| `POST` | `/intelligence/evaluate` | Evaluate movement trajectory payload | `EvaluateMovementRequest` | Array of generated `Event` objects | Implemented |
+| `POST` | `/intelligence/simulate` | Simulate an operational threat | `SimulateDetectionRequest` | Generated `Event` (and escalated `Alert`) | Implemented |
+| `GET` | `/intelligence/zones/all`| List camera zones | None | Array of camera zone dictionaries | Implemented |
+| `GET` | `/intelligence/zones/{id}`| Get zones for specific camera | Path: `id` (camera_id) | Zone dictionary (fence, restricted zone, direction) | Implemented |
+| `POST` | `/intelligence/zones/config`| Update camera zone coordinates | `ZoneUpdateRequest` (JSON) | Updated zone coordinates status | Implemented |
+
+### Analytics (`/analytics`)
+| Method | Endpoint | Description | Request / Params | Response Summary | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/analytics/summary` | Consolidated intelligence metrics | None | Detection aggregates, persons/vehicles, events | Implemented |
+| `POST` | `/analytics/frame` | Single-frame ad-hoc analysis | Multipart form `file` | Raw detection, face, plate, and rule result | Implemented |
+
+---
+
+## 20. Testing
+
+### Backend Automated Test Suite
+The automated test suite is configured via [`pytest.ini`](file:///pytest.ini) and executed using Pytest:
+
+```bash
 pytest -v
 ```
 
----
+#### Test Suite Breakdown (30 Passing Tests)
+- **[`tests/test_health.py`](file:///tests/test_health.py)** (2 tests): Verifies `/health` endpoint structure, platform title, uptime calculation, and camera counts.
+- **[`tests/test_streams_api.py`](file:///tests/test_streams_api.py)** (4 tests): Verifies stream connection, listing, duplicate rejection, and disconnection lifecycle.
+- **[`tests/test_stream_worker.py`](file:///tests/test_stream_worker.py)** (5 tests): Verifies stream worker initialization, timeout detection, reconnection retry limits, and status transitions (`ONLINE` $\to$ `RECONNECTING` $\to$ `ERROR`).
+- **[`tests/test_frame_processor.py`](file:///tests/test_frame_processor.py)** (5 tests): Verifies image normalization, grayscale-to-BGR conversion, aspect ratio maintenance, and invalid frame rejection.
+- **[`tests/test_events_api.py`](file:///tests/test_events_api.py)** (4 tests): Verifies event logging, camera filtering, deduplication cooldown window, and automated alert escalation.
+- **[`tests/test_alerts_api.py`](file:///tests/test_alerts_api.py)** (3 tests): Verifies alert creation, active/resolved status filtering, and one-click alert resolution.
+- **[`tests/test_intelligence.py`](file:///tests/test_intelligence.py)** (7 tests): Verifies virtual fence line crossing, restricted zone point-in-polygon detection, loitering threshold evaluation, and threat simulation endpoints.
 
-## REST API Reference
+#### Offline Video Benchmark Scripts
+In addition to the unit test suite, root-level scripts evaluate the computer vision pipeline on actual MP4 video files:
+- **`test_full_pipeline.py`**: Runs `AnalyticsEngine` (YOLO + ByteTrack + all 7 analytics detectors) on `samples/test_border_feed.mp4` and exports the annotated video to `ibvap_analytics_output.mp4`.
+- **`test_multi_object.py`**: Scans video frames and reports multi-class object detection counts across consecutive frames.
+- **`test_video_frames.py`**: Tests OpenCV frame decoding and dimensions.
 
-The FastAPI backend exposes clean, documented REST and streaming endpoints. Below is a summary of primary routes:
-
-### Stream Management (`/streams`)
-- `POST /streams/connect`: Connect a new camera source (RTSP, local MP4 file, or webcam).
-- `POST /streams/upload`: Upload an MP4 video file to the server's `samples/` directory.
-- `GET /streams`: List all registered camera streams with real-time health metrics.
-- `GET /streams/{camera_id}`: Retrieve metadata and status for a specific camera.
-- `GET /streams/{camera_id}/health`: Query real-time FPS, frame counts, dropped frames, and connection status.
-- `GET /streams/{camera_id}/detections`: Query latest structured detection telemetry (classes, bounding boxes, track IDs).
-- `GET /streams/{camera_id}/live`: MJPEG live video stream with real-time AI bounding boxes, tracking labels, and zones (`?annotated=true`).
-- `GET /streams/{camera_id}/snapshot`: Fetch the latest decoded video frame as a JPEG image.
-- `POST /streams/{camera_id}/disconnect`: Terminate stream worker and release capture resources.
-
-### Events & Alerts (`/events`, `/alerts`)
-- `GET /events`: Retrieve all detected events with optional `camera_id` filter.
-- `POST /events`: Manually log a detected event (escalates to alert if `HIGH` or `CRITICAL`).
-- `GET /alerts`: Retrieve all security alerts with optional `camera_id`, `status` (`ACTIVE`/`RESOLVED`), and `severity` filters.
-- `POST /alerts/{alert_id}/resolve` / `PATCH /alerts/{alert_id}/resolve`: Mark an active alert as resolved.
-
-### Perimeter Intelligence & Zones (`/intelligence`, `/intelligence/zones`)
-- `GET /intelligence/zones/all`: List all active virtual fences and restricted zones across cameras.
-- `POST /intelligence/zones`: Create or update a virtual fence line or restricted polygon boundary.
-- `DELETE /intelligence/zones/{zone_id}`: Remove a configured perimeter boundary.
-
-### System Diagnostics & Analytics (`/health`, `/analytics`)
-- `GET /health`: Platform operational status, server uptime, and online camera count.
-- `GET /analytics/summary`: Consolidated statistics including total detections, persons/vehicles count, and severity distributions.
-- `POST /analytics/frame`: Upload an individual image frame for direct ad-hoc computer vision analysis.
+> **Note on Model Testing in CI**: The automated Pytest suite isolates tests with mock frames and unit models to ensure fast, deterministic execution without requiring GPU hardware or large model downloads. End-to-end model evaluation is executed via `test_full_pipeline.py`.
 
 ---
 
-## Testing with Sample CCTV Videos
+## 21. Sample CCTV Video Usage
 
-The repository includes a dedicated `samples/` directory containing sample surveillance MP4 videos for testing and demonstration without requiring a physical CCTV setup:
+The repository includes surveillance video clips in the `samples/` directory for immediate local testing without needing physical CCTV cameras:
 
-- `samples/test_border_feed.mp4`: Lightweight border outpost test clip.
-- `samples/Sample for CCTV.mp4`: Standard perimeter monitoring scenario.
-- `samples/Sample2 for CCTV.mp4`: Extended multi-subject activity feed.
-- `samples/Sample3 class for CCTV.mp4`: Vehicle and pedestrian classification test.
-- `samples/Sample4 class movement for CCTV.mp4`: Trajectory and direction tracking test.
-- `samples/Sample5 class loitering for CCTV.mp4`: Prolonged stationary loitering scenario.
-- `samples/Sample6 class cut for CCTV.mp4`: Perimeter fence approach scenario.
-- `samples/Sample7 class adit for CCTV.mp4`: Checkpoint ingress/egress scenario.
+| Sample File | Scenario / Focus Area | Recommended Test Purpose |
+| :--- | :--- | :--- |
+| `samples/test_border_feed.mp4` | Border outpost road & perimeter | End-to-end pipeline verification (`test_full_pipeline.py`) |
+| `samples/Sample for CCTV.mp4` | Perimeter gate & highway transit | Vehicle detection, tracking, and virtual fence calibration |
+| `samples/Sample2 for CCTV.mp4` | Multi-lane highway corridor | High-density multi-object tracking and lane classification |
+| `samples/Sample3 class for CCTV.mp4` | Checkpoint vehicle classification | Vehicle classification across cars, trucks, and buses |
+| `samples/Sample4 class movement for CCTV.mp4` | Perimeter movement corridor | Trajectory tracking, speed, and wrong-direction testing |
+| `samples/Sample5 class loitering for CCTV.mp4` | Buffer sector observation post | Stationary dwell-time and loitering rule verification |
+| `samples/Sample6 class cut for CCTV.mp4` | Fence approach scenario | Virtual tripwire line breach verification |
+| `samples/Sample7 class adit for CCTV.mp4` | Restricted access corridor | Restricted zone polygon intrusion testing |
 
-### How to Connect a Sample Video
-
-#### Option A: Using the Web Dashboard (Recommended)
+### Connecting a Sample Video via the Web Dashboard
 1. Open the dashboard at `http://localhost:5173`.
-2. Click **"+ Connect Camera"** in the sidebar or topbar.
-3. Fill in the connection form:
-   - **Camera ID**: e.g., `CAM_SAMPLE_01`
-   - **Source Type**: Select `FILE`
-   - **Source URL / File Path**: `samples/Sample for CCTV.mp4` (or `samples/test_border_feed.mp4`)
-   - **Location**: e.g., `Sector 4 North Checkpoint`
-   - **Loop Video**: Checked (`true`)
-4. Click **"Connect Camera"**.
-5. Navigate to **Live Surveillance** to watch the real-time AI bounding boxes, track IDs, and perimeter alerts.
-
-#### Option B: Using cURL or REST Client
-```bash
-curl -X POST http://127.0.0.1:8000/streams/connect \
-  -H "Content-Type: application/json" \
-  -d '{
-    "camera_id": "CAM_SAMPLE_01",
-    "source_url": "samples/Sample for CCTV.mp4",
-    "source_type": "FILE",
-    "location": "BOP North Gate Alpha",
-    "sector": "Sector 4",
-    "loop_video": true
-  }'
-```
+2. Click **"+ Connect Camera"** in the navigation rail or command bar.
+3. Select any of the **Sample CCTV Presets** from the modal gallery (or enter `samples/Sample for CCTV.mp4` under the **File** tab).
+4. Ensure **Loop Video** is checked.
+5. Click **"Connect Camera"**.
+6. Navigate to **Live Operations** to view the live annotated feed, active bounding boxes, and rule evaluations.
 
 ---
 
-## Performance Considerations
+## 22. Current Limitations
 
-In video analytics and computer vision systems, actual operational throughput and processing latency depend on several environmental and hardware factors rather than fixed theoretical figures:
-
-- **Host Hardware (CPU vs. GPU)**: Running YOLOv8 and PyTorch on an NVIDIA CUDA-enabled GPU provides substantially higher frame throughput compared to CPU-only execution.
-- **Input Stream Resolution**: Ingesting high-definition feeds (1080p / 4K) requires greater decoding and inference bandwidth than standard surveillance resolutions (480p / 720p).
-- **Concurrent Camera Streams**: Each active camera worker operates on an independent thread; the maximum number of simultaneous real-time streams scales with available CPU cores and GPU VRAM.
-- **Inference Model Selection**: Lightweight models (`yolov8n.pt`, `yolo11n.pt`) prioritize low latency and real-time processing, whereas larger variants (`yolov8m`, `yolov8x`) offer higher precision at greater computational cost.
-- **Active Analytical Modules**: Enabling crop-based OCR (ANPR) or dense clustering adds processing overhead per detected vehicle compared to running basic object detection and virtual fence checks alone.
-- **Network Stability**: RTSP stream stability over long-distance wireless links depends on packet loss, bandwidth availability, and network jitter.
-
----
-
-## Differentiation from Conventional Surveillance
-
-| Feature | Conventional CCTV Setup | Proprietary Smart Cameras | IBVAP Platform |
-| :--- | :--- | :--- | :--- |
-| **Hardware Requirement** | Standard CCTV cameras | Expensive proprietary smart cameras | **Works with existing IP/CCTV cameras** |
-| **Capital Expenditure** | Low (existing infrastructure) | Very High (complete hardware replacement) | **Zero hardware replacement required** |
-| **Monitoring Mechanism** | Manual human observation | Camera-embedded edge alerts | **Centralized automated AI orchestration** |
-| **Object Tracking** | None (pure recording) | Basic per-camera tracking | **ByteTrack multi-object persistent tracking** |
-| **Perimeter Boundary Logic** | Fixed hardware sensors | Vendor-locked proprietary tools | **Dynamic software-defined fences & polygons** |
-| **Behavioral Analytics** | None | Limited motion detection | **Loitering, wrong direction, group, night analysis** |
-| **Threat Scoring** | None | Binary motion trigger | **Multi-signal composite risk scoring (0–100)** |
-| **Alert Management** | Manual review | High false-alarm rate | **5s cooldown deduplication & active triage** |
-| **Operator Interface** | Standard NVR video wall | Proprietary vendor software | **Modern web-based command dashboard** |
+1. **Environmental & Lighting Sensitivity**:
+   - Optical object detection accuracy declines during severe adverse weather (dense fog, heavy rainfall, sandstorms) and extreme camera glare.
+   - Low-light night detection relies on ambient illumination or IR illuminators; total darkness without infrared illumination prevents optical detection.
+2. **Prototype-Level ANPR & Face Detection**:
+   - ANPR uses general English EasyOCR on vehicle crops rather than a trained license plate character recognition network. Plates obscured by mud, extreme angles, or poor lighting may yield partial or absent readings.
+   - Face detection uses Haar Cascades to flag facial presence in near-field views; it does not perform identity verification or facial recognition against databases.
+3. **In-Memory Volatile Persistence**:
+   - Active streams, logged events, generated alerts, and custom zone coordinates are held in server memory. Restarting the backend resets the system state to default configurations.
+4. **CPU Resource Constraints**:
+   - Running multiple simultaneous streams with YOLOv8 and ByteTrack on entry-level CPU-only hardware will experience lower analytics frame rates (~5–10 FPS). Hardware GPU acceleration (CUDA) is recommended for production multi-stream deployment.
+5. **No Production Authentication / Multi-Tenancy**:
+   - The current API has no authentication or user session layer; all endpoints are open to the local network.
+6. **No Distributed Orchestration**:
+   - Designed to run on a single host machine or edge workstation; cluster distribution across multiple edge worker nodes is not yet supported.
 
 ---
 
-## Limitations
+## 23. Future Roadmap
 
-- **Environmental & Scene Dependency**: Optical detection accuracy is inherently affected by extreme weather conditions (dense fog, torrential rain, heavy dust storms), severe camera glare, low camera angles, and physical line-of-sight occlusions.
-- **License Plate Readability (ANPR)**: Automatic Number Plate Recognition relies on adequate pixel resolution, readable camera angles, and sufficient illumination; highly degraded, obscured, or non-standard plates may yield partial or absent readings.
-- **Rule-Based Behavioral Inference**: Suspicious activity scoring uses multi-signal heuristic rules and trajectory vectors; it does not replace human operational judgement in complex tactical scenarios.
-- **Resource Constraints on CPU**: Running multiple simultaneous camera feeds with deep learning models on entry-level CPU-only hardware will experience reduced effective analytics frame rates.
-- **Prototype Implementation**: The current software release is an evaluated research prototype designed for demonstration, technical evaluation, and field pilot deployments; production mission-critical deployments require distributed cluster scaling, database persistence, and hardware-accelerated edge gateways.
-
----
-
-## Future Enhancements
-
-- **Hardware Acceleration**: Integration with TensorRT and ONNX Runtime for optimized sub-millisecond inference on NVIDIA Jetson and edge GPU accelerators.
-- **Low-Light & Thermal Camera Fusion**: Specialized computer vision pipelines for thermal imaging (FLIR) and infrared (IR) night-vision feeds.
-- **Custom Border Datasets**: Fine-tuning YOLO models on domain-specific border defense datasets (camouflage gear, border patrol vehicles, specialized equipment).
-- **Indian ANPR Localization**: Training custom character recognition models optimized for diverse Indian high-security registration plates (HSRP) and state variations.
-- **Cross-Camera Re-Identification (Re-ID)**: Global feature embeddings to track subjects seamlessly across non-overlapping camera fields of view.
-- **Database Persistence**: Migration of event and alert stores from memory to scalable databases (PostgreSQL / TimescaleDB) for historical analytics.
-- **Role-Based Access Control (RBAC)**: Multi-tenant operator authentication, shift logging, and encrypted audit trails.
-- **Automated Incident Dispatch**: Webhook integrations for automated SMS, email, and radio dispatch to field response teams upon Critical perimeter breaches.
+- **Phase 3A: Persistence & Security (Short-Term)**:
+  - PostgreSQL / TimescaleDB database backend for permanent event, alert, and zone persistence.
+  - JWT-based authentication and role-based access control (Admin, Operator, Read-Only).
+  - Multi-stage Docker containerization with GPU runtime support.
+- **Phase 3B: Advanced Inference (Medium-Term)**:
+  - Dedicated license plate localization and recognition pipeline (LPRNet / CRNN).
+  - WebSocket telemetry streaming (`/ws/telemetry`) to replace polling.
+  - Thermal / FLIR video stream ingestion and palette normalization.
+  - Webhook dispatch for automated SMS, email, and radio dispatch upon Critical breaches.
+- **Phase 3C: Enterprise Orchestration (Long-Term)**:
+  - Cross-camera subject re-identification (Re-ID) across non-overlapping camera views.
+  - Distributed edge worker node clustering managed via a central C2 server.
+  - Hardware acceleration with TensorRT and ONNX Runtime for edge deployment on NVIDIA Jetson devices.
 
 ---
 
-## Authors & Project Background
+## 24. Development Note
 
-**IBVAP (Intelligent Border Video Analytics Platform)** was conceptualized, designed, and developed by **Om Saxena** and fellow engineering collaborators as a next-generation software-defined intelligence platform for border perimeter defense.
+**IBVAP (Intelligent Border Video Analytics Platform)** was conceptualized, architected, and developed as an independent engineering project by **Om Saxena**.
 
-The system was engineered to demonstrate that modern computer vision pipelines (YOLOv8 + ByteTrack) paired with an asynchronous FastAPI streaming engine and a bespoke mission-control interface can transform legacy, non-AI CCTV cameras into an active, multi-camera tactical surveillance grid without requiring expensive proprietary hardware replacements.
-
-### Core Development Team
-- **Om Saxena** — Project Lead, AI/ML Pipeline & Full-Stack Architecture
-- **Engineering Collaborators** — Computer Vision Analytics, Motion UI Design, & Quality Assurance
+The project was created to demonstrate how modern computer vision pipelines (YOLO + ByteTrack) paired with an asynchronous FastAPI streaming engine and a bespoke mission-control interface (**FORGE COMMAND**) can transform legacy, non-AI CCTV cameras into an active, multi-camera tactical surveillance grid without requiring expensive proprietary hardware replacements.
 
 ---
 
-## License
+## 25. License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for complete details.
 
 ```
 MIT License
@@ -816,7 +721,7 @@ SOFTWARE.
 - **Surveillance Prototype**: The project demonstrates an AI-based intelligent video analytics prototype for border surveillance using commodity IP CCTV streams.
 - **Open Access & Reuse**: The repository may be viewed, cloned, studied, modified, and reused according to the terms of the MIT License.
 - **Attribution Requirement**: Proper attribution to the original author (Om Saxena) must be retained in all copies or substantial portions of the software, as required by the MIT License.
-- **Operational Disclaimer**: This project is a proof-of-concept software prototype and should not be represented as an official government security system or deployed in a real border-security environment without appropriate authorization, validation, security review, and operational testing.
+- **Operational Disclaimer**: This project is a proof-of-concept software prototype and should not be represented as an official government security system or deployed in an operational border-security environment without appropriate authorization, validation, security review, and operational testing.
 
 ### Repository Usage & Attribution
 
@@ -827,13 +732,19 @@ Under the MIT License:
 
 ### Third-Party Software & Dependencies
 
-The MIT License of this repository applies exclusively to the original architectural source code, custom analytical engines, API route implementations, and frontend interfaces authored for this project.
+The MIT License of this repository applies to the original architectural source code, custom analytical engines, API route implementations, and frontend interfaces authored for this project.
 
-It does not overwrite, modify, or claim ownership of third-party libraries, pretrained neural network weights, or external frameworks utilized as dependencies:
-- **YOLOv8 / Ultralytics**: Used for deep-learning object detection, governed by the [Ultralytics License](https://github.com/ultralytics/ultralytics/blob/main/LICENSE).
-- **EasyOCR**: Used for optical character recognition, licensed under the [Apache 2.0 License](https://github.com/JaidedAI/EasyOCR/blob/master/LICENSE).
-- **OpenCV**: Used for computer vision and video stream processing, licensed under the [Apache 2.0 License](https://opencv.org/license/).
-- **PyTorch**: Deep learning execution backend, licensed under the [PyTorch BSD-style License](https://github.com/pytorch/pytorch/blob/main/LICENSE).
-- **FastAPI / Uvicorn**: High-performance asynchronous backend framework, licensed under the [MIT License](https://github.com/fastapi/fastapi/blob/master/LICENSE).
-- **React / Vite / TypeScript**: Frontend application library, bundler, and type system, licensed under their respective open-source licenses (MIT / Apache 2.0).
-- **Sample Media**: Video files located in `samples/` are included solely for local algorithmic evaluation and demonstration purposes.
+It does not claim ownership of third-party libraries, pretrained neural network weights, or external frameworks utilized as dependencies:
+- **YOLO / Ultralytics**: Governed by the [Ultralytics License](https://github.com/ultralytics/ultralytics/blob/main/LICENSE).
+- **EasyOCR**: Licensed under the [Apache 2.0 License](https://github.com/JaidedAI/EasyOCR/blob/master/LICENSE).
+- **OpenCV**: Licensed under the [Apache 2.0 License](https://opencv.org/license/).
+- **PyTorch**: Licensed under the [PyTorch BSD-style License](https://github.com/pytorch/pytorch/blob/main/LICENSE).
+- **FastAPI / Uvicorn**: Licensed under the [MIT License](https://github.com/fastapi/fastapi/blob/master/LICENSE).
+- **React / Vite / TypeScript**: Licensed under their respective open-source licenses (MIT / Apache 2.0).
+- **Sample Media**: Video files located in `samples/` are included solely for algorithmic evaluation and demonstration purposes.
+
+---
+
+## 26. Disclaimer
+
+This software is an independent research prototype engineered for technical evaluation and demonstration. It is not affiliated with, endorsed by, or sponsored by any government agency or defense department. Field deployment in life-critical or mission-critical perimeter security contexts requires certified hardware, hardened infrastructure, formal security compliance reviews, and authorized operational testing.
